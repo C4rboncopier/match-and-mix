@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Match and Mix Trial</string>
+    
+    <!-- Game title -->
+    <string name="game_title">Match &amp; Mix</string>
+    
+    <!-- Stats -->
+    <string name="stat_score">Score</string>
+    <string name="stat_chances">Chances</string>
+    <string name="stat_time">Time</string>
+    <string name="stat_timer">Timer</string>
+    <string name="stat_game_over">Game Over!</string>
+    <string name="stat_you_won">You Won!</string>
+    
+    <!-- Buttons -->
+    <string name="button_start_game">Start Game</string>
+    <string name="button_play_again">Play Again</string>
+    
+    <!-- Dialog messages -->
+    <string name="dialog_game_over_title">Game Over!</string>
+    <string name="dialog_final_score">Final Score: %1$d</string>
+    <string name="dialog_congratulations">Congratulations!</string>
+    <string name="dialog_you_won">You\'ve Won!</string>
+    <string name="dialog_pairs_matched">Pairs Matched: %1$d</string>
+    <string name="dialog_chances_remaining">Chances Remaining: %1$d</string>
+
+    <!-- Instructions Screen -->
+    <string name="instructions_title">How to Play</string>
+    <string name="instructions_back">Back</string>
+    
+    <!-- Instructions Sections -->
+    <string name="instructions_section_objective_title">Game Objective</string>
+    <string name="instructions_section_objective_content">Match &amp; Mix is a unique memory-puzzle game that combines number matching with tile sliding. Your goal is to find matching number pairs while strategically moving tiles to create opportunities for matches.</string>
+    
+    <string name="instructions_section_elements_title">Game Elements</string>
+    <string name="instructions_section_elements_content">• Each tile contains 5 numbers arranged in a cross pattern\n• One space is always empty, allowing tiles to be moved\n• Numbers can only be matched when they are revealed\n• You have 3 chances and limited time to make matches</string>
+    
+    <string name="instructions_section_howto_title">How to Play</string>
+    <string name="instructions_section_howto_content">1. Click on numbers to reveal them\n2. You can reveal up to 2 numbers at a time\n3. If the numbers match, they turn green and stay revealed\n4. If they don\'t match, they will be hidden again\n5. Slide tiles into the empty space to create new matching opportunities\n6. Match all pairs before time runs out to win!</string>
+    
+    <string name="instructions_section_scoring_title">Scoring</string>
+    <string name="instructions_section_scoring_content">• Each correct match: +10 points\n• Quick matches (under 5 seconds): +5 bonus points\n• Wrong matches: -2 points\n• Running out of chances: Game Over</string>
+    
+    <string name="instructions_section_tips_title">Tips</string>
+    <string name="instructions_section_tips_content">• Plan your moves carefully\n• Remember the numbers you\'ve seen\n• Use the empty space strategically\n• Try to make matches quickly for bonus points\n• Keep track of your remaining chances</string>
+</resources>

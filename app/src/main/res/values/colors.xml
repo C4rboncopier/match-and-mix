@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base colors -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- App specific colors -->
+    <color name="background_light_gray">#FFF5F5F5</color>
+    <color name="material_blue">#FF2196F3</color>
+    <color name="material_green">#FF4CAF50</color>
+    <color name="text_gray">#FF808080</color>
+    <color name="text_dark_gray">#FF424242</color>
+    <color name="border_gray">#FFE0E0E0</color>
+    <color name="border_light_gray">#FFBDBDBD</color>
+</resources>
