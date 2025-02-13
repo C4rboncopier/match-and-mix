@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Match and Mix Trial"
+rootProject.name = "Match and Mix"
 include(":app")

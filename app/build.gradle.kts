@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.matchandmixtrial"
+    namespace = "com.mobdev.matchandmix"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.matchandmixtrial"
+        applicationId = "com.mobdev.matchandmix"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
