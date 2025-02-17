@@ -1,10 +1,11 @@
 package com.mobdev.matchandmix.ui.screens.game.components
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -13,19 +14,58 @@ import androidx.compose.ui.unit.dp
 import com.mobdev.matchandmix.R
 import com.mobdev.matchandmix.data.models.Tile
 import com.mobdev.matchandmix.data.models.SelectedNumber
+import kotlinx.coroutines.launch
 
 @Composable
 fun GameTile(
     tile: Tile,
     onNumberClick: (Tile, Int) -> Unit,
     incorrectPair: List<SelectedNumber> = emptyList(),
-    isHighlighted: Boolean = false
+    isHighlighted: Boolean = false,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
 
+    // Calculate grid position
+    val row = tile.position / 3
+    val col = tile.position % 3
+
+    // Create animated offset values
+    val offsetX = remember { Animatable(col * 108f) } // 100dp size + 8dp spacing
+    val offsetY = remember { Animatable(row * 108f) }
+
+    // Update position with animation when tile moves
+    LaunchedEffect(tile.position) {
+        val newRow = tile.position / 3
+        val newCol = tile.position % 3
+
+        launch {
+            offsetX.animateTo(
+                targetValue = newCol * 108f,
+                animationSpec = tween(
+                    durationMillis = 300,
+                    easing = FastOutSlowInEasing
+                )
+            )
+        }
+        launch {
+            offsetY.animateTo(
+                targetValue = newRow * 108f,
+                animationSpec = tween(
+                    durationMillis = 300,
+                    easing = FastOutSlowInEasing
+                )
+            )
+        }
+    }
+
     Box(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = modifier
+            .offset(
+                x = offsetX.value.dp,
+                y = offsetY.value.dp
+            )
+            .size(100.dp)
             .border(
                 width = if (isHighlighted) 3.dp else 2.dp,
                 color = if (isHighlighted)
@@ -43,7 +83,9 @@ fun GameTile(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly,
-            modifier = Modifier.fillMaxSize().padding(8.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp)
         ) {
             // Top row numbers
             Row(
@@ -65,6 +107,7 @@ fun GameTile(
                     onClick = { onNumberClick(tile, 1) }
                 )
             }
+
             // Middle number
             NumberCircle(
                 number = tile.numbers[2],
@@ -73,6 +116,7 @@ fun GameTile(
                 isIncorrect = incorrectPair.any { it.tile.id == tile.id && it.numberIndex == 2 },
                 onClick = { onNumberClick(tile, 2) }
             )
+
             // Bottom row numbers
             Row(
                 horizontalArrangement = Arrangement.SpaceEvenly,
