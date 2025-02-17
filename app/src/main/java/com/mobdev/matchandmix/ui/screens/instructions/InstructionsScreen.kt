@@ -25,7 +25,7 @@ fun InstructionsScreen(navController: NavController) {
         modifier = Modifier
             .fillMaxSize()
             .systemBarsPadding()
-            .padding(16.dp)
+            .padding(top = 25.dp, start = 16.dp, end = 16.dp)
     ) {
         // Top Bar with back button
         Row(

@@ -37,9 +37,9 @@ fun SinglePlayerGameScreen(navController: NavController) {
     }) }
     var selectedNumbers by remember { mutableStateOf<List<SelectedNumber>>(emptyList()) }
     var score by remember { mutableIntStateOf(0) }
-    var chances by remember { mutableIntStateOf(3) }
-    var timeLeft by remember { mutableIntStateOf(60) }
-    var pairSelectTimeLeft by remember { mutableIntStateOf(10) }
+    var chances by remember { mutableIntStateOf(5) }
+    var timeLeft by remember { mutableIntStateOf(90) }
+    var pairSelectTimeLeft by remember { mutableIntStateOf(15) }
     var correctPairsCounter by remember { mutableIntStateOf(0) }
     var emptyPosition by remember { mutableIntStateOf(8) }
     var isProcessing by remember { mutableStateOf(false) }
@@ -139,7 +139,7 @@ fun SinglePlayerGameScreen(navController: NavController) {
         if (gameState == GameState.PLAYING) {
             // Reset timer when no numbers are selected
             if (selectedNumbers.isEmpty()) {
-                pairSelectTimeLeft = 10
+                pairSelectTimeLeft = 15
             }
 
             // Keep counting down while game is playing and not all numbers are selected
@@ -156,7 +156,7 @@ fun SinglePlayerGameScreen(navController: NavController) {
                         // Reset tiles and timer
                         tiles = tiles.map { it.copy(isRevealed = List(5) { false }) }
                         selectedNumbers = emptyList()
-                        pairSelectTimeLeft = 10  // Reset timer back to 10
+                        pairSelectTimeLeft = 15  // Reset timer back to 10
 
                         val adjacentPositions = getAdjacentPositions(emptyPosition)
                         val movableTiles = tiles.filter { it.position in adjacentPositions }
@@ -176,7 +176,7 @@ fun SinglePlayerGameScreen(navController: NavController) {
             .fillMaxSize()
             .background(Color(context.getColor(R.color.background_light_gray)))
             .systemBarsPadding()
-            .padding(horizontal = 16.dp),
+            .padding(top = 25.dp, start = 16.dp, end = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Top bar with back button and title
@@ -441,8 +441,8 @@ fun SinglePlayerGameScreen(navController: NavController) {
                                 showGameOverDialog = false
                                 tiles = generateTiles()
                                 score = 0
-                                chances = 3
-                                timeLeft = 60
+                                chances = 5
+                                timeLeft = 90
                                 selectedNumbers = emptyList()
                                 correctPairsCounter = 0
                                 totalMatchedPairs = 0
@@ -510,8 +510,8 @@ fun SinglePlayerGameScreen(navController: NavController) {
                                 showWinDialog = false
                                 tiles = generateTiles()
                                 score = 0
-                                chances = 3
-                                timeLeft = 60
+                                chances = 5
+                                timeLeft = 90
                                 selectedNumbers = emptyList()
                                 correctPairsCounter = 0
                                 totalMatchedPairs = 0
