@@ -2,7 +2,7 @@ package com.mobdev.matchandmix.ui.screens.welcome
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -11,13 +11,32 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.mobdev.matchandmix.navigation.Screen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mobdev.matchandmix.ui.screens.auth.AuthViewModel
+import kotlinx.coroutines.launch
 
 @Composable
-fun WelcomeScreen(navController: NavController) {
+fun WelcomeScreen(
+    navController: NavController,
+    authViewModel: AuthViewModel = viewModel()
+) {
+    val scope = rememberCoroutineScope()
+    var username by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        val currentUser = authViewModel.getCurrentUser()
+        if (currentUser != null) {
+            // Get username from Firestore using the user's UID
+            scope.launch {
+                username = authViewModel.getUsernameFromFirestore(currentUser.uid)
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .systemBarsPadding() // This handles both status bar and navigation bar
+            .systemBarsPadding()
             .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -28,8 +47,19 @@ fun WelcomeScreen(navController: NavController) {
             fontSize = 48.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 48.dp)
+            modifier = Modifier.padding(bottom = if (username != null) 8.dp else 48.dp)
         )
+
+        // Welcome Message - only show if user is logged in
+        if (username != null) {
+            Text(
+                text = "Welcome back, $username!",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
+        }
 
         // Navigation Buttons
         NavigationButton(
@@ -53,8 +83,18 @@ fun WelcomeScreen(navController: NavController) {
         )
 
         NavigationButton(
-            text = "Login/Register",
-            onClick = { navController.navigate(Screen.Login.route) }
+            text = if (username == null) "Login/Register" else "Logout",
+            onClick = {
+                if (username == null) {
+                    navController.navigate(Screen.Login.route)
+                } else {
+                    authViewModel.signOut()
+                    username = null
+                    navController.navigate(Screen.Welcome.route) {
+                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    }
+                }
+            }
         )
 
         NavigationButton(

@@ -12,6 +12,7 @@
     <string name="stat_timer">Timer</string>
     <string name="stat_game_over">Game Over!</string>
     <string name="stat_you_won">You Won!</string>
+    <string name="stat_high_score">High Score</string>
 
     <!-- Buttons -->
     <string name="button_play_game">Play Game</string>

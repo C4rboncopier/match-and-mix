@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,16 +28,20 @@ import com.mobdev.matchandmix.ui.screens.game.components.*
 import com.mobdev.matchandmix.utils.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun SinglePlayerGameScreen(navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val gameViewModel: GameViewModel = viewModel()
+
     var gameState by remember { mutableStateOf(GameState.INITIAL) }
     var tiles by remember { mutableStateOf(generateTiles().map {
         it.copy(isRevealed = List(5) { false })
     }) }
     var selectedNumbers by remember { mutableStateOf<List<SelectedNumber>>(emptyList()) }
+    var correctPairs by remember { mutableIntStateOf(0) }
     var score by remember { mutableIntStateOf(0) }
     var chances by remember { mutableIntStateOf(5) }
     var timeLeft by remember { mutableIntStateOf(90) }
@@ -153,10 +159,19 @@ fun SinglePlayerGameScreen(navController: NavController) {
                     if (chances <= 0) {
                         gameState = GameState.GAME_OVER
                     } else {
-                        // Reset tiles and timer
-                        tiles = tiles.map { it.copy(isRevealed = List(5) { false }) }
+                        // Reset only unmatched tiles
+                        tiles = tiles.map { tile ->
+                            val newRevealed = tile.isRevealed.toMutableList()
+                            tile.numbers.forEachIndexed { index, _ ->
+                                // Only hide numbers that aren't matched
+                                if (!tile.isMatched[index]) {
+                                    newRevealed[index] = false
+                                }
+                            }
+                            tile.copy(isRevealed = newRevealed)
+                        }
                         selectedNumbers = emptyList()
-                        pairSelectTimeLeft = 15  // Reset timer back to 10
+                        pairSelectTimeLeft = 15  // Reset timer back to 15
 
                         val adjacentPositions = getAdjacentPositions(emptyPosition)
                         val movableTiles = tiles.filter { it.position in adjacentPositions }
@@ -225,145 +240,227 @@ fun SinglePlayerGameScreen(navController: NavController) {
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             colors = CardDefaults.cardColors(containerColor = Color(context.getColor(R.color.white)))
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                    .padding(vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                StatItem(stringResource(R.string.stat_score), score)
-                StatItem(stringResource(R.string.stat_chances), chances)
-                when (gameState) {
-                    GameState.INITIAL -> StatItem(stringResource(R.string.stat_time), timeLeft)
-                    GameState.PREVIEW -> StatItem(stringResource(R.string.stat_time), timeLeft)
-                    GameState.PLAYING -> StatItem(stringResource(R.string.stat_timer), pairSelectTimeLeft)
-                    GameState.GAME_OVER -> StatItem(stringResource(R.string.stat_game_over), 0)
-                    GameState.WIN -> StatItem(stringResource(R.string.stat_you_won), score)
+                // First row: Score, Correct, Chances
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatItem("Score", score)
+                    StatItem("Correct", correctPairs)
+                    StatItem(stringResource(R.string.stat_chances), chances)
+                }
+
+                // Divider
+                Divider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    thickness = 1.dp
+                )
+
+                // Second row: High Score and Timer/Time
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatItem(
+                        stringResource(R.string.stat_high_score),
+                        gameViewModel.highScore
+                    )
+                    when (gameState) {
+                        GameState.INITIAL -> StatItem(stringResource(R.string.stat_time), timeLeft)
+                        GameState.PREVIEW -> StatItem(stringResource(R.string.stat_time), timeLeft)
+                        GameState.PLAYING -> StatItem(stringResource(R.string.stat_timer), pairSelectTimeLeft)
+                        GameState.GAME_OVER -> StatItem(stringResource(R.string.stat_game_over), 0)
+                        GameState.WIN -> StatItem(stringResource(R.string.stat_you_won), score)
+                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        // Login message if not logged in and in INITIAL state
+        if (!gameViewModel.isUserLoggedIn() && gameState == GameState.INITIAL) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AccountCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = "Save your scores!",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Medium
+                        ),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Button(
+                        onClick = { 
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(Screen.Welcome.route)
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.wrapContentWidth()
+                    ) {
+                        Text(
+                            "Login",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Game board
         Card(
             modifier = Modifier
                 .padding(8.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .aspectRatio(1f), // Make the card square
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
             colors = CardDefaults.cardColors(containerColor = Color(context.getColor(R.color.white)))
         ) {
-            GameBoard(
-                tiles = tiles,
-                emptyPosition = emptyPosition,
-                onNumberClick = { tile, numberIndex ->
-                    if (gameState == GameState.PLAYING &&
-                        !tile.isMatched[numberIndex] &&
-                        selectedNumbers.size < 2 &&
-                        !isProcessing) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                GameBoard(
+                    tiles = tiles,
+                    emptyPosition = emptyPosition,
+                    onNumberClick = { tile, numberIndex ->
+                        if (gameState == GameState.PLAYING &&
+                            !tile.isMatched[numberIndex] &&
+                            selectedNumbers.size < 2 &&
+                            !isProcessing) {
 
-                        val newTiles = tiles.map {
-                            if (it.id == tile.id) {
-                                it.copy(isRevealed = it.isRevealed.toMutableList().apply {
-                                    set(numberIndex, true)
-                                })
-                            } else it
-                        }
-                        tiles = newTiles
-                        selectedNumbers = selectedNumbers + SelectedNumber(tile, numberIndex)
+                            val newTiles = tiles.map {
+                                if (it.id == tile.id) {
+                                    it.copy(isRevealed = it.isRevealed.toMutableList().apply {
+                                        set(numberIndex, true)
+                                    })
+                                } else it
+                            }
+                            tiles = newTiles
+                            selectedNumbers = selectedNumbers + SelectedNumber(tile, numberIndex)
 
-                        if (selectedNumbers.size == 2) {
-                            isProcessing = true
-                            scope.launch {
-                                val firstNumber = selectedNumbers[0]
-                                val secondNumber = selectedNumbers[1]
+                            if (selectedNumbers.size == 2) {
+                                isProcessing = true
+                                scope.launch {
+                                    val firstNumber = selectedNumbers[0]
+                                    val secondNumber = selectedNumbers[1]
 
-                                if (firstNumber.tile.numbers[firstNumber.numberIndex] ==
-                                    secondNumber.tile.numbers[secondNumber.numberIndex]) {
-                                    // Matched pair
-                                    score++
-                                    correctPairsCounter++
-                                    totalMatchedPairs++
+                                    if (firstNumber.tile.numbers[firstNumber.numberIndex] ==
+                                        secondNumber.tile.numbers[secondNumber.numberIndex]) {
+                                        // Matched pair
+                                        correctPairs++
+                                        val pointsEarned = ScoreUtils.calculateScore(pairSelectTimeLeft)
+                                        score += pointsEarned
+                                        correctPairsCounter++
+                                        totalMatchedPairs++
 
-                                    val matchedNumber = firstNumber.tile.numbers[firstNumber.numberIndex]
-                                    tiles = tiles.map { tile ->
-                                        val newMatched = tile.isMatched.toMutableList()
-                                        val newRevealed = tile.isRevealed.toMutableList()
+                                        val matchedNumber = firstNumber.tile.numbers[firstNumber.numberIndex]
+                                        tiles = tiles.map { tile ->
+                                            val newMatched = tile.isMatched.toMutableList()
+                                            val newRevealed = tile.isRevealed.toMutableList()
 
-                                        tile.numbers.forEachIndexed { index, number ->
-                                            if (number == matchedNumber) {
-                                                newMatched[index] = true
-                                                newRevealed[index] = true
+                                            tile.numbers.forEachIndexed { index, number ->
+                                                if (number == matchedNumber) {
+                                                    newMatched[index] = true
+                                                    newRevealed[index] = true
+                                                }
+                                            }
+
+                                            tile.copy(
+                                                isMatched = newMatched,
+                                                isRevealed = newRevealed
+                                            )
+                                        }
+
+                                        delay(100)
+
+                                        if (totalMatchedPairs == 20) {
+                                            gameState = GameState.WIN
+                                        }
+                                    } else {
+                                        chances--
+                                        // Set the incorrect pair to show red background
+                                        incorrectPair = selectedNumbers
+                                        delay(1000)
+                                        // Reset the incorrect pair
+                                        incorrectPair = emptyList()
+                                        tiles = tiles.map {
+                                            if (it.id == firstNumber.tile.id || it.id == secondNumber.tile.id) {
+                                                it.copy(isRevealed = it.isRevealed.toMutableList().apply {
+                                                    if (it.id == firstNumber.tile.id) {
+                                                        set(firstNumber.numberIndex, false)
+                                                    }
+                                                    if (it.id == secondNumber.tile.id) {
+                                                        set(secondNumber.numberIndex, false)
+                                                    }
+                                                })
+                                            } else it
+                                        }
+
+                                        if (chances <= 0) {
+                                            gameState = GameState.GAME_OVER
+                                        } else {
+                                            val adjacentPositions = getAdjacentPositions(emptyPosition)
+                                            val movableTiles = tiles.filter { it.position in adjacentPositions }
+                                            if (movableTiles.isNotEmpty()) {
+                                                val tileToMove = movableTiles.random()
+                                                val oldPosition = tileToMove.position
+                                                handleTileMovement(oldPosition, emptyPosition)
                                             }
                                         }
-
-                                        tile.copy(
-                                            isMatched = newMatched,
-                                            isRevealed = newRevealed
-                                        )
                                     }
-
-                                    delay(100)
-
-                                    if (correctPairsCounter == 5) {
-                                        delay(500)
-
-                                        val adjacentPositions = getAdjacentPositions(emptyPosition)
-                                        val movableTiles = tiles.filter { it.position in adjacentPositions }
-                                        if (movableTiles.isNotEmpty()) {
-                                            val tileToMove = movableTiles.random()
-                                            val oldPosition = tileToMove.position
-                                            handleTileMovement(oldPosition, emptyPosition)
-                                        }
-
-                                        correctPairsCounter = 0
-                                    }
-
-                                    if (totalMatchedPairs == 20) {
-                                        gameState = GameState.WIN
-                                    }
-                                } else {
-                                    chances--
-                                    // Set the incorrect pair to show red background
-                                    incorrectPair = selectedNumbers
-                                    delay(1000)
-                                    // Reset the incorrect pair
-                                    incorrectPair = emptyList()
-                                    tiles = tiles.map {
-                                        if (it.id == firstNumber.tile.id || it.id == secondNumber.tile.id) {
-                                            it.copy(isRevealed = it.isRevealed.toMutableList().apply {
-                                                if (it.id == firstNumber.tile.id) {
-                                                    set(firstNumber.numberIndex, false)
-                                                }
-                                                if (it.id == secondNumber.tile.id) {
-                                                    set(secondNumber.numberIndex, false)
-                                                }
-                                            })
-                                        } else it
-                                    }
-
-                                    if (chances <= 0) {
-                                        gameState = GameState.GAME_OVER
-                                    } else {
-                                        val adjacentPositions = getAdjacentPositions(emptyPosition)
-                                        val movableTiles = tiles.filter { it.position in adjacentPositions }
-                                        if (movableTiles.isNotEmpty()) {
-                                            val tileToMove = movableTiles.random()
-                                            val oldPosition = tileToMove.position
-                                            handleTileMovement(oldPosition, emptyPosition)
-                                        }
-                                    }
+                                    delay(300)
+                                    selectedNumbers = emptyList()
+                                    isProcessing = false
                                 }
-                                delay(300)
-                                selectedNumbers = emptyList()
-                                isProcessing = false
                             }
                         }
-                    }
-                },
-                incorrectPair = incorrectPair,
-                highlightedPositions = highlightedPositions
-            )
+                    },
+                    incorrectPair = incorrectPair,
+                    highlightedPositions = highlightedPositions
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -463,33 +560,51 @@ fun SinglePlayerGameScreen(navController: NavController) {
                 onDismissRequest = {},
                 title = {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
                             text = stringResource(R.string.dialog_congratulations),
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(context.getColor(R.color.material_green))
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = Color(context.getColor(R.color.material_green)),
+                            textAlign = TextAlign.Center
                         )
                         Text(
                             text = stringResource(R.string.dialog_you_won),
-                            fontSize = 20.sp,
-                            modifier = Modifier.padding(top = 8.dp)
+                            style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center
                         )
                     }
                 },
                 text = {
                     Column(
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(stringResource(R.string.dialog_final_score, score))
-                        Text(stringResource(R.string.dialog_pairs_matched, totalMatchedPairs))
-                        Text(stringResource(R.string.dialog_chances_remaining, chances))
+                        Text(
+                            text = stringResource(R.string.dialog_final_score, score),
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = stringResource(R.string.dialog_pairs_matched, totalMatchedPairs),
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = stringResource(R.string.dialog_chances_remaining, chances),
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 },
                 confirmButton = {
                     Row(
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Button(
@@ -527,6 +642,13 @@ fun SinglePlayerGameScreen(navController: NavController) {
                     }
                 }
             )
+        }
+
+        // Update high score when game is over (either win or lose)
+        LaunchedEffect(gameState) {
+            if (gameState == GameState.WIN || gameState == GameState.GAME_OVER) {
+                gameViewModel.updateHighScore(score)
+            }
         }
     }
 }

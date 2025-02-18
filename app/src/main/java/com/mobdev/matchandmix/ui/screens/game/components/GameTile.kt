@@ -31,7 +31,7 @@ fun GameTile(
     val col = tile.position % 3
 
     // Create animated offset values
-    val offsetX = remember { Animatable(col * 108f) } // 100dp size + 8dp spacing
+    val offsetX = remember { Animatable(col * 108f) }
     val offsetY = remember { Animatable(row * 108f) }
 
     // Update position with animation when tile moves

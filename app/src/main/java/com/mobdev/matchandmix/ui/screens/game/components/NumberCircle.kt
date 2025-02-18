@@ -31,16 +31,12 @@ fun NumberCircle(
 ) {
     val context = LocalContext.current
 
-    // Animation state
     val rotation = remember { Animatable(if (isRevealed) 180f else 0f) }
 
-    // Keep track of whether this number has been previously revealed
     var wasRevealed by remember { mutableStateOf(isRevealed) }
 
-    // Trigger animation only for newly revealed numbers
     LaunchedEffect(isRevealed) {
         if (isRevealed && !wasRevealed) {
-            // Only animate if this is a new reveal
             wasRevealed = true
             rotation.animateTo(
                 targetValue = 180f,
@@ -50,11 +46,9 @@ fun NumberCircle(
                 )
             )
         } else if (!isRevealed && wasRevealed) {
-            // Reset when hiding
             wasRevealed = false
             rotation.snapTo(0f)
         } else if (isRevealed && wasRevealed) {
-            // For already revealed numbers (like after moving), just snap to revealed state
             rotation.snapTo(180f)
         }
     }
@@ -88,12 +82,10 @@ fun NumberCircle(
         contentAlignment = Alignment.Center
     ) {
         if (isRevealed || isMatched) {
-            // Only show the number when the card has rotated past 90 degrees
             val shouldShowContent = rotation.value > 90f
 
             Box(
                 modifier = Modifier.graphicsLayer {
-                    // Counter-rotate the content and handle visibility
                     rotationY = if (shouldShowContent) 180f else 0f
                     alpha = if (shouldShowContent) 1f else 0f
                 },

@@ -1,36 +1,53 @@
 package com.mobdev.matchandmix.ui.screens.game.components
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mobdev.matchandmix.R
 
 @Composable
 fun StatItem(label: String, value: Int) {
     val context = LocalContext.current
-
+    
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(8.dp)
+        modifier = Modifier
+            .width(80.dp)
+            .padding(horizontal = 4.dp)
     ) {
+        // Label
         Text(
             text = label,
-            fontSize = 14.sp,
-            color = Color(context.getColor(R.color.text_gray))
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Medium
+            ),
+            color = Color(context.getColor(R.color.text_gray)),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
-        Text(
-            text = value.toString(),
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(context.getColor(R.color.material_blue))
-        )
+        
+        // Value
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .height(32.dp)
+                .fillMaxWidth()
+        ) {
+            Text(
+                text = value.toString(),
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = Color(context.getColor(R.color.material_blue)),
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
