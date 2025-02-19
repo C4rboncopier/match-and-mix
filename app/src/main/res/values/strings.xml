@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Match and Mix Trial</string>
+    <string name="app_name">Match and Mix</string>
+    <string name="default_web_client_id">183854170810-s36tmgk29ch1ejfvf1ddbr0d3h6u57p7.apps.googleusercontent.com</string>
 
     <!-- Game title -->
     <string name="game_title">Match &amp; Mix</string>

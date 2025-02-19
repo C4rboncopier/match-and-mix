@@ -29,6 +29,7 @@ import com.mobdev.matchandmix.utils.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.activity.compose.BackHandler
 
 @Composable
 fun SinglePlayerGameScreen(navController: NavController) {
@@ -77,6 +78,18 @@ fun SinglePlayerGameScreen(navController: NavController) {
 
     // Back button confirmation dialog state
     var showExitConfirmation by remember { mutableStateOf(false) }
+
+    // Handle system back button press
+    BackHandler {
+        if (gameState == GameState.INITIAL) {
+            navController.popBackStack(
+                route = Screen.Welcome.route,
+                inclusive = false
+            )
+        } else {
+            showExitConfirmation = true
+        }
+    }
 
     // Back button confirmation dialog
     if (showExitConfirmation) {

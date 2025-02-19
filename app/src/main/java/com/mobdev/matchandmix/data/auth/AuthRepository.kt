@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import java.util.Date
+import com.google.firebase.auth.GoogleAuthProvider
 
 sealed class AuthResult {
     data class Success(val user: FirebaseUser, val username: String) : AuthResult()
@@ -15,6 +16,8 @@ sealed class AuthResult {
 interface AuthRepository {
     suspend fun login(username: String, password: String): AuthResult
     suspend fun register(fullName: String, username: String, email: String, password: String): AuthResult
+    suspend fun signInWithGoogle(idToken: String): AuthResult
+    suspend fun registerWithGoogle(idToken: String, username: String): AuthResult
     fun getCurrentUser(): FirebaseUser?
     fun signOut()
 }
@@ -104,6 +107,71 @@ class FirebaseAuthRepository(
 
                 // Sign out the user after successful registration
                 auth.signOut()
+
+                AuthResult.Success(user, username)
+            } ?: AuthResult.Error("Registration failed")
+        } catch (e: Exception) {
+            AuthResult.Error(e.message ?: "Unknown error occurred")
+        }
+    }
+
+    override suspend fun signInWithGoogle(idToken: String): AuthResult {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val result = auth.signInWithCredential(credential).await()
+            
+            result.user?.let { user ->
+                // Check if user exists in Firestore
+                val userDoc = firestore.collection("users")
+                    .document(user.uid)
+                    .get()
+                    .await()
+                
+                if (userDoc.exists()) {
+                    val username = userDoc.getString("username") ?: return AuthResult.Error("Username not found")
+                    AuthResult.Success(user, username)
+                } else {
+                    // User doesn't exist in Firestore
+                    auth.signOut()
+                    AuthResult.Error("NEW_GOOGLE_USER")
+                }
+            } ?: AuthResult.Error("Sign in failed")
+        } catch (e: Exception) {
+            AuthResult.Error(e.message ?: "Unknown error occurred")
+        }
+    }
+
+    override suspend fun registerWithGoogle(idToken: String, username: String): AuthResult {
+        return try {
+            // First check if username is available
+            val usernameQuery = firestore.collection("users")
+                .whereEqualTo("username", username)
+                .get()
+                .await()
+
+            if (!usernameQuery.isEmpty) {
+                return AuthResult.Error("Username already exists")
+            }
+
+            // Sign in with Google credentials
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val result = auth.signInWithCredential(credential).await()
+            
+            result.user?.let { user ->
+                val userData = hashMapOf(
+                    "uid" to user.uid,
+                    "fullName" to user.displayName,
+                    "username" to username,
+                    "email" to user.email,
+                    "createdAt" to Date(),
+                    "lastLoginAt" to Date(),
+                    "highScore" to 0
+                )
+
+                firestore.collection("users")
+                    .document(user.uid)
+                    .set(userData)
+                    .await()
 
                 AuthResult.Success(user, username)
             } ?: AuthResult.Error("Registration failed")
