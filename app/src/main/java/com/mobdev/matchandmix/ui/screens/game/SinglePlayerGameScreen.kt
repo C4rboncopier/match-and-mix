@@ -30,6 +30,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.compose.BackHandler
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 
 @Composable
 fun SinglePlayerGameScreen(navController: NavController) {
@@ -202,7 +204,11 @@ fun SinglePlayerGameScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(context.getColor(R.color.background_light_gray)))
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(Color(0xFFB2EBF2), Color(0xFF81D4FA), Color((0xFF64FFDA))) // Light Aqua to Soft Teal
+                )
+            )
             .systemBarsPadding()
             .padding(top = 25.dp, start = 16.dp, end = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -238,8 +244,8 @@ fun SinglePlayerGameScreen(navController: NavController) {
                 text = stringResource(R.string.game_title),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(context.getColor(R.color.material_blue))
-            )
+                color = Color( 0xff2962ff))
+
 
             // Placeholder to center the title
             Box(modifier = Modifier.size(48.dp))
@@ -276,7 +282,7 @@ fun SinglePlayerGameScreen(navController: NavController) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant,
+                    color = Color( 0xff2979ff),
                     thickness = 1.dp
                 )
 
@@ -486,7 +492,7 @@ fun SinglePlayerGameScreen(navController: NavController) {
                     gameState = GameState.PREVIEW  // Move to preview state
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(context.getColor(R.color.material_blue))
+                    containerColor = Color( 0xff2962ff)
                 ),
                 modifier = Modifier
                     .height(48.dp)
