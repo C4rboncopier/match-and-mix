@@ -8,11 +8,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.mobdev.matchandmix.R
 import com.mobdev.matchandmix.data.models.Tile
 import com.mobdev.matchandmix.data.models.SelectedNumber
+import com.mobdev.matchandmix.utils.GameState
 
 @Composable
 fun GameBoard(
