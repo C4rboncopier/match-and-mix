@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "183854170810",
+    "project_id": "match-and-mix-fd8dd",
+    "storage_bucket": "match-and-mix-fd8dd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:183854170810:android:2db51f4e17985edbf2f883",
+        "android_client_info": {
+          "package_name": "com.mobdev.matchandmix"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCyu5LwNQFARMzNRAle5H0mjj9nd_SiVp8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
