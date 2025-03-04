@@ -3,6 +3,7 @@ package com.mobdev.matchandmix.ui.screens.game.components
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 fun GameTile(
     tile: Tile,
     onNumberClick: (Tile, Int) -> Unit,
+    onTileClick: () -> Unit,
     incorrectPair: List<SelectedNumber> = emptyList(),
     isHighlighted: Boolean = false,
     modifier: Modifier = Modifier
@@ -77,7 +79,8 @@ fun GameTile(
             .background(
                 color = Color(context.getColor(R.color.white)),
                 shape = RoundedCornerShape(8.dp)
-            ),
+            )
+            .clickable(enabled = isHighlighted) { onTileClick() },
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -86,6 +89,7 @@ fun GameTile(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(8.dp)
+                .clickable(enabled = isHighlighted) { onTileClick() }
         ) {
             // Top row numbers
             Row(
@@ -97,14 +101,14 @@ fun GameTile(
                     isRevealed = tile.isRevealed[0],
                     isMatched = tile.isMatched[0],
                     isIncorrect = incorrectPair.any { it.tile.id == tile.id && it.numberIndex == 0 },
-                    onClick = { onNumberClick(tile, 0) }
+                    onClick = { if (!isHighlighted) onNumberClick(tile, 0) else onTileClick() }
                 )
                 NumberCircle(
                     number = tile.numbers[1],
                     isRevealed = tile.isRevealed[1],
                     isMatched = tile.isMatched[1],
                     isIncorrect = incorrectPair.any { it.tile.id == tile.id && it.numberIndex == 1 },
-                    onClick = { onNumberClick(tile, 1) }
+                    onClick = { if (!isHighlighted) onNumberClick(tile, 1) else onTileClick() }
                 )
             }
 
@@ -114,7 +118,7 @@ fun GameTile(
                 isRevealed = tile.isRevealed[2],
                 isMatched = tile.isMatched[2],
                 isIncorrect = incorrectPair.any { it.tile.id == tile.id && it.numberIndex == 2 },
-                onClick = { onNumberClick(tile, 2) }
+                onClick = { if (!isHighlighted) onNumberClick(tile, 2) else onTileClick() }
             )
 
             // Bottom row numbers
@@ -127,14 +131,14 @@ fun GameTile(
                     isRevealed = tile.isRevealed[3],
                     isMatched = tile.isMatched[3],
                     isIncorrect = incorrectPair.any { it.tile.id == tile.id && it.numberIndex == 3 },
-                    onClick = { onNumberClick(tile, 3) }
+                    onClick = { if (!isHighlighted) onNumberClick(tile, 3) else onTileClick() }
                 )
                 NumberCircle(
                     number = tile.numbers[4],
                     isRevealed = tile.isRevealed[4],
                     isMatched = tile.isMatched[4],
                     isIncorrect = incorrectPair.any { it.tile.id == tile.id && it.numberIndex == 4 },
-                    onClick = { onNumberClick(tile, 4) }
+                    onClick = { if (!isHighlighted) onNumberClick(tile, 4) else onTileClick() }
                 )
             }
         }

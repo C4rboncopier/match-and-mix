@@ -485,6 +485,11 @@ fun SinglePlayerGameScreen(navController: NavController) {
                                 }
                             }
                         },
+                        onTileClick = { position ->
+                            if (position in highlightedPositions) {
+                                handleTileMovement(position, emptyPosition)
+                            }
+                        },
                         incorrectPair = incorrectPair,
                         highlightedPositions = highlightedPositions
                     )

@@ -1,6 +1,7 @@
 package com.mobdev.matchandmix.ui.screens.game.components
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -21,6 +22,7 @@ fun GameBoard(
     tiles: List<Tile>,
     emptyPosition: Int,
     onNumberClick: (Tile, Int) -> Unit,
+    onTileClick: (Int) -> Unit,
     incorrectPair: List<SelectedNumber> = emptyList(),
     highlightedPositions: Set<Int> = emptySet()
 ) {
@@ -53,6 +55,9 @@ fun GameBoard(
                                         Color(context.getColor(R.color.border_light_gray)),
                                     shape = RoundedCornerShape(8.dp)
                                 )
+                                .clickable(enabled = position in highlightedPositions) {
+                                    onTileClick(position)
+                                }
                         )
                     }
                 }
@@ -65,6 +70,7 @@ fun GameBoard(
                 GameTile(
                     tile = tile,
                     onNumberClick = onNumberClick,
+                    onTileClick = { onTileClick(tile.position) },
                     incorrectPair = incorrectPair,
                     isHighlighted = tile.position in highlightedPositions,
                     modifier = Modifier.zIndex(1f)
