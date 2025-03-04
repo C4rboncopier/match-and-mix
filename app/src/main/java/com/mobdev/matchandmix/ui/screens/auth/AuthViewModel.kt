@@ -1,27 +1,16 @@
 package com.mobdev.matchandmix.ui.screens.auth
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.credentials.CredentialManager
-import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.google.api.Context
-import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.mobdev.matchandmix.data.auth.AuthRepository
 import com.mobdev.matchandmix.data.auth.AuthResult
 import com.mobdev.matchandmix.data.auth.FirebaseAuthRepository
 import kotlinx.coroutines.launch
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
-import java.util.UUID
 
 class AuthViewModel(
     private val repository: AuthRepository = FirebaseAuthRepository(),

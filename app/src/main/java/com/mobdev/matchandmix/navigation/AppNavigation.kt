@@ -12,6 +12,7 @@ import com.mobdev.matchandmix.ui.screens.auth.RegisterScreen
 import com.mobdev.matchandmix.ui.screens.game.SinglePlayerGameScreen
 import com.mobdev.matchandmix.ui.screens.welcome.WelcomeScreen
 import com.mobdev.matchandmix.ui.screens.instructions.InstructionsScreen
+import com.mobdev.matchandmix.ui.screens.leaderboard.LeaderboardsScreen
 
 sealed class Screen(val route: String) {
     object Welcome : Screen("welcome")
@@ -81,7 +82,7 @@ fun AppNavigation(navController: NavHostController) {
         }
 
         composable(Screen.Leaderboards.route) {
-            // TODO: Add leaderboards screen
+            LeaderboardsScreen(navController = navController)
         }
 
         composable(Screen.Settings.route) {
