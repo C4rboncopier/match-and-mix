@@ -1,5 +1,7 @@
 package com.mobdev.matchandmix.ui.screens.instructions
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,6 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -19,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.mobdev.matchandmix.R
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun InstructionsScreen(navController: NavController) {
     Column(
@@ -44,8 +49,9 @@ fun InstructionsScreen(navController: NavController) {
             }
             Text(
                 text = stringResource(R.string.instructions_title),
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 32.sp,
+                fontFamily = FontFamily(Font(R.font.dangrekregular)),
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
             )
             // Empty box for alignment

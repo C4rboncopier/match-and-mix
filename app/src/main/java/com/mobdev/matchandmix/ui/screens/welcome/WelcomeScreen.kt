@@ -15,7 +15,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -27,6 +26,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mobdev.matchandmix.R
 import com.mobdev.matchandmix.navigation.Screen
 import com.mobdev.matchandmix.ui.screens.auth.AuthViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -86,7 +88,7 @@ fun WelcomeScreen(
                         'H' to Color(0xFF40E0D0), // Turquoise
                         '&' to Color(0xFFFF69B4), // Hot Pink
                         'I' to Color(0xFFFFC0CB), // Light Pink
-                        'X' to Color(0xFFFF8C00)  // Deep Saffron
+                        'X' to Color(0xFFD1C4E9), // Light Purple
                     )
                     val grayColor = Color.White // Light Gray for empty spaces
                     val borderColor = Color.Gray
@@ -144,7 +146,8 @@ fun WelcomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     ImageButtonWithLabel(
-                        imageRes = R.drawable.button_1,
+                        defaultImageRes = R.drawable.button_1_idle,
+                        clickedImageRes = R.drawable.button_1_clicked,
                         text = "Singleplayer",
                         onClick = { navController.navigate(Screen.SinglePlayer.route) },
                         modifier = Modifier.weight(1f)
@@ -152,7 +155,8 @@ fun WelcomeScreen(
                     )
 
                     ImageButtonWithLabel(
-                        imageRes = R.drawable.button_1,
+                        defaultImageRes = R.drawable.button_1_idle,
+                        clickedImageRes = R.drawable.button_1_clicked,
                         text = "Multiplayer",
                         onClick = { navController.navigate(Screen.Multiplayer.route) },
                         modifier = Modifier.weight(1f)
@@ -168,19 +172,22 @@ fun WelcomeScreen(
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     IconButtonLogo(
-                        iconRes = R.drawable.instructions,
+                        clickedIconRes = R.drawable.instructions_clicked,
+                        defaultIconRes = R.drawable.instructions_idle,
                         onClick = { navController.navigate(Screen.Instructions.route) },
                         modifier = Modifier.weight(1f)
                     )
 
                     IconButtonLogo(
-                        iconRes = R.drawable.leaderboards,
+                        clickedIconRes = R.drawable.leaderboards_clicked,
+                        defaultIconRes = R.drawable.leaderboard_idle,
                         onClick = { navController.navigate(Screen.Leaderboards.route) },
                         modifier = Modifier.weight(1f)
                     )
 
                     IconButtonLogo(
-                        iconRes = if (username == null) R.drawable.login else R.drawable.logout,
+                        defaultIconRes = if (username == null) R.drawable.login_idle else R.drawable.logout_idle,
+                        clickedIconRes = if (username == null) R.drawable.login_clicked else R.drawable.logout_clicked,
                         onClick = {
                             if (username == null) {
                                 navController.navigate(Screen.Login.route)
@@ -195,7 +202,8 @@ fun WelcomeScreen(
                     )
 
                     IconButtonLogo(
-                        iconRes = R.drawable.settings,
+                        clickedIconRes = R.drawable.settings_clicked,
+                        defaultIconRes = R.drawable.settings_idle,
                         onClick = { navController.navigate(Screen.Settings.route) },
                         modifier = Modifier.weight(1f)
                     )
@@ -232,20 +240,30 @@ private fun NavigationButton(
 
 @Composable
 fun ImageButtonWithLabel(
-    imageRes: Int,
+    defaultImageRes: Int,
+    clickedImageRes: Int,
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isClicked by remember { mutableStateOf(false) }
+
     Box(
         modifier = modifier
             .height(80.dp)
             .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick),
+            .clickable {
+                isClicked = true
+                onClick()
+                CoroutineScope(Dispatchers.Main).launch {
+                    delay(100) // Reset image after 100ms
+                    isClicked = false
+                }
+            },
         contentAlignment = Alignment.Center
     ) {
         Image(
-            painter = painterResource(id = imageRes),
+            painter = painterResource(id = if (isClicked) clickedImageRes else defaultImageRes),
             contentDescription = text,
             contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxSize()
@@ -263,24 +281,29 @@ fun ImageButtonWithLabel(
 
 @Composable
 fun IconButtonLogo(
-    iconRes: Int,
+    defaultIconRes: Int,
+    clickedIconRes: Int,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isClicked by remember { mutableStateOf(false) }
+
     IconButton(
-        onClick = onClick,
-        modifier = Modifier
-            .size(80.dp)
+        onClick = {
+            isClicked = true
+            onClick()
+            CoroutineScope(Dispatchers.Main).launch {
+                delay(100) // Reset image after 100ms
+                isClicked = false
+            }
+        },
+        modifier = Modifier.size(80.dp)
     ) {
         Image(
-            painter = painterResource(id = iconRes),
+            painter = painterResource(id = if (isClicked) clickedIconRes else defaultIconRes),
             contentDescription = null,
             contentScale = ContentScale.Fit,
-            modifier = Modifier
-                .size(65.dp)
-
-
-
+            modifier = Modifier.size(65.dp)
         )
     }
 }
