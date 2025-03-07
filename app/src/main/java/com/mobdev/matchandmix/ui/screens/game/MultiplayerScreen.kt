@@ -23,7 +23,16 @@ import androidx.navigation.NavController
 import com.mobdev.matchandmix.R
 import com.mobdev.matchandmix.navigation.Screen
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import com.mobdev.matchandmix.ui.screens.game.components.GameBoard
+import com.mobdev.matchandmix.ui.screens.welcome.ImageButtonWithLabel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 private fun StatColumn(
@@ -178,7 +187,7 @@ fun MultiplayerScreen(navController: NavController) {
     Box(modifier = Modifier.fillMaxSize()) {
         // Background Image
         Image(
-            painter = painterResource(id = R.drawable.testbackground),
+            painter = painterResource(id = R.drawable.multiplayerbg),
             contentDescription = "Background",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
@@ -212,7 +221,8 @@ fun MultiplayerScreen(navController: NavController) {
                 Text(
                     text = "Multiplayer",
                     fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraLight,
+                    fontFamily = FontFamily(Font(R.font.sigmarregular)),
                     color = Color(0xff2962ff)
                 )
 
@@ -244,7 +254,7 @@ fun MultiplayerScreen(navController: NavController) {
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
-                                onClick = { 
+                                onClick = {
                                     navController.navigate(Screen.Login.route) {
                                         popUpTo(Screen.Welcome.route)
                                     }
@@ -274,37 +284,44 @@ fun MultiplayerScreen(navController: NavController) {
                         ) {
                             Text(
                                 text = "Host Game",
-                                style = MaterialTheme.typography.titleLarge,
+                                fontFamily = FontFamily(Font(R.font.ovoregular)),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp,
                                 color = Color(0xff2962ff)
                             )
-                            Button(
-                                onClick = { viewModel.createPrivateGame() },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Create Private Match")
-                            }
+                            ImageButtonWithLabelSolo(
+                                defaultImageRes = R.drawable.button_1_idle,
+                                clickedImageRes = R.drawable.button_1_clicked,
+                                text = "Create Lobby",
+                                onClick = { viewModel.createPrivateGame()  }
+
+                            )
                             Divider()
                             Text(
                                 text = "Join Game",
-                                style = MaterialTheme.typography.titleLarge,
+                                fontFamily = FontFamily(Font(R.font.ovoregular)),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp,
                                 color = Color(0xff2962ff)
                             )
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Button(
+                                ImageButtonWithLabelRow(
+                                    defaultImageRes = R.drawable.button_1_idle,
+                                    clickedImageRes = R.drawable.button_1_clicked,
+                                    text = "Enter Code",
                                     onClick = { showJoinDialog = true },
                                     modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Enter Code")
-                                }
-                                Button(
+                                )
+                                ImageButtonWithLabelRow(
+                                    defaultImageRes = R.drawable.button_1_idle,
+                                    clickedImageRes = R.drawable.button_1_clicked,
+                                    text = "Quick Play",
                                     onClick = { viewModel.joinRandomGame() },
                                     modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Quick Play")
-                                }
+                                )
                             }
                         }
                     }
@@ -639,4 +656,87 @@ fun MultiplayerScreen(navController: NavController) {
             }
         }
     }
-} 
+}
+@Composable
+fun ImageButtonWithLabelSolo(
+    defaultImageRes: Int,
+    clickedImageRes: Int,
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var isClicked by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = modifier
+            .height(80.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable {
+                isClicked = true
+                onClick()
+                CoroutineScope(Dispatchers.Main).launch {
+                    delay(100) // Reset image after 100ms
+                    isClicked = false
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(id = if (isClicked) clickedImageRes else defaultImageRes),
+            contentDescription = text,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .height(200.dp)
+                .width(200.dp)
+        )
+        Text(
+            text = text,
+            fontSize = 17.sp,
+            fontFamily = FontFamily(Font(R.font.sigmarregular)),
+            fontWeight = FontWeight.Light,
+            color = Color.White,
+            modifier = Modifier.align(Alignment.Center)
+        )
+    }
+}
+
+@Composable
+fun ImageButtonWithLabelRow(
+    defaultImageRes: Int,
+    clickedImageRes: Int,
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var isClicked by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = modifier
+            .height(80.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable {
+                isClicked = true
+                onClick()
+                CoroutineScope(Dispatchers.Main).launch {
+                    delay(100) // Reset image after 100ms
+                    isClicked = false
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(id = if (isClicked) clickedImageRes else defaultImageRes),
+            contentDescription = text,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxSize()
+        )
+        Text(
+            text = text,
+            fontSize = 17.sp,
+            fontFamily = FontFamily(Font(R.font.sigmarregular)),
+            fontWeight = FontWeight.Light,
+            color = Color.White,
+            modifier = Modifier.align(Alignment.Center)
+        )
+    }
+}

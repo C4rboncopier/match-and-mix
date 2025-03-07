@@ -32,9 +32,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 
 @Composable
 fun SinglePlayerGameScreen(navController: NavController) {
@@ -43,9 +46,11 @@ fun SinglePlayerGameScreen(navController: NavController) {
     val gameViewModel: GameViewModel = viewModel()
 
     var gameState by remember { mutableStateOf(GameState.INITIAL) }
-    var tiles by remember { mutableStateOf(generateTiles().map {
-        it.copy(isRevealed = List(5) { false })
-    }) }
+    var tiles by remember {
+        mutableStateOf(generateTiles().map {
+            it.copy(isRevealed = List(5) { false })
+        })
+    }
     var selectedNumbers by remember { mutableStateOf<List<SelectedNumber>>(emptyList()) }
     var correctPairs by remember { mutableIntStateOf(0) }
     var score by remember { mutableIntStateOf(0) }
@@ -140,6 +145,7 @@ fun SinglePlayerGameScreen(navController: NavController) {
                 showGameOverDialog = false
                 showWinDialog = false
             }
+
             GameState.PREVIEW -> {
                 while (timeLeft > 0 && gameState == GameState.PREVIEW) {
                     delay(1000)
@@ -149,10 +155,12 @@ fun SinglePlayerGameScreen(navController: NavController) {
                     }
                 }
             }
+
             GameState.PLAYING -> {}
             GameState.GAME_OVER -> {
                 showGameOverDialog = true
             }
+
             GameState.WIN -> {
                 showWinDialog = true
             }
@@ -204,9 +212,9 @@ fun SinglePlayerGameScreen(navController: NavController) {
         }
     }
     Box(
-            modifier = Modifier
-                .fillMaxSize()
-            ) {
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
         // Background Image
         Image(
             painter = painterResource(id = R.drawable.testbackground),
@@ -252,8 +260,10 @@ fun SinglePlayerGameScreen(navController: NavController) {
                 Text(
                     text = stringResource(R.string.game_title),
                     fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color( 0xff2962ff))
+                    fontFamily = FontFamily(Font(R.font.sigmarregular)),
+                    fontWeight = FontWeight.Thin,
+                    color = Color(0xff2962ff)
+                )
 
 
                 // Placeholder to center the title
@@ -291,7 +301,7 @@ fun SinglePlayerGameScreen(navController: NavController) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp),
-                        color = Color( 0xff2979ff),
+                        color = Color(0xff2979ff),
                         thickness = 1.dp
                     )
 
@@ -307,10 +317,26 @@ fun SinglePlayerGameScreen(navController: NavController) {
                             gameViewModel.highScore
                         )
                         when (gameState) {
-                            GameState.INITIAL -> StatItem(stringResource(R.string.stat_time), timeLeft)
-                            GameState.PREVIEW -> StatItem(stringResource(R.string.stat_time), timeLeft)
-                            GameState.PLAYING -> StatItem(stringResource(R.string.stat_timer), pairSelectTimeLeft)
-                            GameState.GAME_OVER -> StatItem(stringResource(R.string.stat_game_over), 0)
+                            GameState.INITIAL -> StatItem(
+                                stringResource(R.string.stat_time),
+                                timeLeft
+                            )
+
+                            GameState.PREVIEW -> StatItem(
+                                stringResource(R.string.stat_time),
+                                timeLeft
+                            )
+
+                            GameState.PLAYING -> StatItem(
+                                stringResource(R.string.stat_timer),
+                                pairSelectTimeLeft
+                            )
+
+                            GameState.GAME_OVER -> StatItem(
+                                stringResource(R.string.stat_game_over),
+                                0
+                            )
+
                             GameState.WIN -> StatItem(stringResource(R.string.stat_you_won), score)
                         }
                     }
@@ -372,320 +398,351 @@ fun SinglePlayerGameScreen(navController: NavController) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
 
-            // Game board
-            Card(
-                modifier = Modifier
-                    .padding(8.dp)
-                    .fillMaxWidth()
-                    .aspectRatio(1f), // Make the card square
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(context.getColor(R.color.white)))
-            ) {
-                Box(
+
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Game board
+                Card(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(8.dp),
-                    contentAlignment = Alignment.Center
+                        .padding(8.dp)
+                        .fillMaxWidth()
+                        .aspectRatio(1f), // Make the card square
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(context.getColor(R.color.white)))
                 ) {
-                    GameBoard(
-                        tiles = tiles,
-                        emptyPosition = emptyPosition,
-                        onNumberClick = { tile, numberIndex ->
-                            if (gameState == GameState.PLAYING &&
-                                !tile.isMatched[numberIndex] &&
-                                selectedNumbers.size < 2 &&
-                                !isProcessing) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        GameBoard(
+                            tiles = tiles,
+                            emptyPosition = emptyPosition,
+                            onNumberClick = { tile, numberIndex ->
+                                if (gameState == GameState.PLAYING &&
+                                    !tile.isMatched[numberIndex] &&
+                                    selectedNumbers.size < 2 &&
+                                    !isProcessing
+                                ) {
 
-                                val newTiles = tiles.map {
-                                    if (it.id == tile.id) {
-                                        it.copy(isRevealed = it.isRevealed.toMutableList().apply {
-                                            set(numberIndex, true)
-                                        })
-                                    } else it
-                                }
-                                tiles = newTiles
-                                selectedNumbers = selectedNumbers + SelectedNumber(tile, numberIndex)
+                                    val newTiles = tiles.map {
+                                        if (it.id == tile.id) {
+                                            it.copy(
+                                                isRevealed = it.isRevealed.toMutableList().apply {
+                                                    set(numberIndex, true)
+                                                })
+                                        } else it
+                                    }
+                                    tiles = newTiles
+                                    selectedNumbers =
+                                        selectedNumbers + SelectedNumber(tile, numberIndex)
 
-                                if (selectedNumbers.size == 2) {
-                                    isProcessing = true
-                                    scope.launch {
-                                        val firstNumber = selectedNumbers[0]
-                                        val secondNumber = selectedNumbers[1]
+                                    if (selectedNumbers.size == 2) {
+                                        isProcessing = true
+                                        scope.launch {
+                                            val firstNumber = selectedNumbers[0]
+                                            val secondNumber = selectedNumbers[1]
 
-                                        if (firstNumber.tile.numbers[firstNumber.numberIndex] ==
-                                            secondNumber.tile.numbers[secondNumber.numberIndex]) {
-                                            // Matched pair
-                                            correctPairs++
-                                            val pointsEarned = ScoreUtils.calculateScore(pairSelectTimeLeft)
-                                            score += pointsEarned
-                                            correctPairsCounter++
-                                            totalMatchedPairs++
+                                            if (firstNumber.tile.numbers[firstNumber.numberIndex] ==
+                                                secondNumber.tile.numbers[secondNumber.numberIndex]
+                                            ) {
+                                                // Matched pair
+                                                correctPairs++
+                                                val pointsEarned =
+                                                    ScoreUtils.calculateScore(pairSelectTimeLeft)
+                                                score += pointsEarned
+                                                correctPairsCounter++
+                                                totalMatchedPairs++
 
-                                            val matchedNumber = firstNumber.tile.numbers[firstNumber.numberIndex]
-                                            tiles = tiles.map { tile ->
-                                                val newMatched = tile.isMatched.toMutableList()
-                                                val newRevealed = tile.isRevealed.toMutableList()
+                                                val matchedNumber =
+                                                    firstNumber.tile.numbers[firstNumber.numberIndex]
+                                                tiles = tiles.map { tile ->
+                                                    val newMatched = tile.isMatched.toMutableList()
+                                                    val newRevealed =
+                                                        tile.isRevealed.toMutableList()
 
-                                                tile.numbers.forEachIndexed { index, number ->
-                                                    if (number == matchedNumber) {
-                                                        newMatched[index] = true
-                                                        newRevealed[index] = true
+                                                    tile.numbers.forEachIndexed { index, number ->
+                                                        if (number == matchedNumber) {
+                                                            newMatched[index] = true
+                                                            newRevealed[index] = true
+                                                        }
+                                                    }
+
+                                                    tile.copy(
+                                                        isMatched = newMatched,
+                                                        isRevealed = newRevealed
+                                                    )
+                                                }
+
+                                                delay(100)
+
+                                                if (totalMatchedPairs == 20) {
+                                                    gameState = GameState.WIN
+                                                }
+                                            } else {
+                                                chances--
+                                                // Set the incorrect pair to show red background
+                                                incorrectPair = selectedNumbers
+                                                delay(1000)
+                                                // Reset the incorrect pair
+                                                incorrectPair = emptyList()
+                                                tiles = tiles.map {
+                                                    if (it.id == firstNumber.tile.id || it.id == secondNumber.tile.id) {
+                                                        it.copy(
+                                                            isRevealed = it.isRevealed.toMutableList()
+                                                                .apply {
+                                                                    if (it.id == firstNumber.tile.id) {
+                                                                        set(
+                                                                            firstNumber.numberIndex,
+                                                                            false
+                                                                        )
+                                                                    }
+                                                                    if (it.id == secondNumber.tile.id) {
+                                                                        set(
+                                                                            secondNumber.numberIndex,
+                                                                            false
+                                                                        )
+                                                                    }
+                                                                })
+                                                    } else it
+                                                }
+
+                                                if (chances <= 0) {
+                                                    gameState = GameState.GAME_OVER
+                                                } else {
+                                                    val adjacentPositions =
+                                                        getAdjacentPositions(emptyPosition)
+                                                    val movableTiles =
+                                                        tiles.filter { it.position in adjacentPositions }
+                                                    if (movableTiles.isNotEmpty()) {
+                                                        val tileToMove = movableTiles.random()
+                                                        val oldPosition = tileToMove.position
+                                                        handleTileMovement(
+                                                            oldPosition,
+                                                            emptyPosition
+                                                        )
                                                     }
                                                 }
-
-                                                tile.copy(
-                                                    isMatched = newMatched,
-                                                    isRevealed = newRevealed
-                                                )
                                             }
-
-                                            delay(100)
-
-                                            if (totalMatchedPairs == 20) {
-                                                gameState = GameState.WIN
-                                            }
-                                        } else {
-                                            chances--
-                                            // Set the incorrect pair to show red background
-                                            incorrectPair = selectedNumbers
-                                            delay(1000)
-                                            // Reset the incorrect pair
-                                            incorrectPair = emptyList()
-                                            tiles = tiles.map {
-                                                if (it.id == firstNumber.tile.id || it.id == secondNumber.tile.id) {
-                                                    it.copy(isRevealed = it.isRevealed.toMutableList().apply {
-                                                        if (it.id == firstNumber.tile.id) {
-                                                            set(firstNumber.numberIndex, false)
-                                                        }
-                                                        if (it.id == secondNumber.tile.id) {
-                                                            set(secondNumber.numberIndex, false)
-                                                        }
-                                                    })
-                                                } else it
-                                            }
-
-                                            if (chances <= 0) {
-                                                gameState = GameState.GAME_OVER
-                                            } else {
-                                                val adjacentPositions = getAdjacentPositions(emptyPosition)
-                                                val movableTiles = tiles.filter { it.position in adjacentPositions }
-                                                if (movableTiles.isNotEmpty()) {
-                                                    val tileToMove = movableTiles.random()
-                                                    val oldPosition = tileToMove.position
-                                                    handleTileMovement(oldPosition, emptyPosition)
-                                                }
-                                            }
+                                            delay(300)
+                                            selectedNumbers = emptyList()
+                                            isProcessing = false
                                         }
-                                        delay(300)
+                                    }
+                                }
+                            },
+                            onTileClick = { position ->
+                                if (position in highlightedPositions) {
+                                    handleTileMovement(position, emptyPosition)
+                                }
+                            },
+                            incorrectPair = incorrectPair,
+                            highlightedPositions = highlightedPositions
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Play Game button (shown in INITIAL state)
+                if (gameState == GameState.INITIAL) {
+                    Button(
+                        onClick = {
+                            tiles = generateTiles()  // Generate new tiles with visible numbers
+                            gameState = GameState.PREVIEW  // Move to preview state
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xff2962ff)
+                        ),
+                        modifier = Modifier
+                            .height(48.dp)
+                            .width(200.dp),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.button_play_game),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // Start Game button (shown in PREVIEW state)
+                if (gameState == GameState.PREVIEW) {
+                    Button(
+                        onClick = {
+                            startGame(tiles, gameState) {
+                                tiles = it; gameState = GameState.PLAYING
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(context.getColor(R.color.material_green))
+                        ),
+                        modifier = Modifier
+                            .height(48.dp)
+                            .width(200.dp),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.button_start_game),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // Game Over dialog
+                if (showGameOverDialog) {
+                    AlertDialog(
+                        onDismissRequest = {},
+                        title = { Text(stringResource(R.string.dialog_game_over_title)) },
+                        text = { Text(stringResource(R.string.dialog_final_score, score)) },
+                        confirmButton = {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        showGameOverDialog = false
+                                        navController.navigate(Screen.Welcome.route) {
+                                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(context.getColor(R.color.material_blue))
+                                    )
+                                ) {
+                                    Text(stringResource(R.string.button_back_to_main))
+                                }
+                                Button(
+                                    onClick = {
+                                        showGameOverDialog = false
+                                        tiles = generateTiles()
+                                        score = 0
+                                        chances = 5
+                                        timeLeft = 90
                                         selectedNumbers = emptyList()
-                                        isProcessing = false
+                                        correctPairsCounter = 0
+                                        totalMatchedPairs = 0
+                                        emptyPosition = 8
+                                        gameState = GameState.PREVIEW
                                     }
+                                ) {
+                                    Text(stringResource(R.string.button_play_again))
                                 }
                             }
-                        },
-                        onTileClick = { position ->
-                            if (position in highlightedPositions) {
-                                handleTileMovement(position, emptyPosition)
-                            }
-                        },
-                        incorrectPair = incorrectPair,
-                        highlightedPositions = highlightedPositions
+                        }
                     )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Play Game button (shown in INITIAL state)
-            if (gameState == GameState.INITIAL) {
-                Button(
-                    onClick = {
-                        tiles = generateTiles()  // Generate new tiles with visible numbers
-                        gameState = GameState.PREVIEW  // Move to preview state
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color( 0xff2962ff)
-                    ),
-                    modifier = Modifier
-                        .height(48.dp)
-                        .width(200.dp),
-                    shape = RoundedCornerShape(24.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.button_play_game),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            // Start Game button (shown in PREVIEW state)
-            if (gameState == GameState.PREVIEW) {
-                Button(
-                    onClick = {
-                        startGame(tiles, gameState) { tiles = it; gameState = GameState.PLAYING }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(context.getColor(R.color.material_green))
-                    ),
-                    modifier = Modifier
-                        .height(48.dp)
-                        .width(200.dp),
-                    shape = RoundedCornerShape(24.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.button_start_game),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            // Game Over dialog
-            if (showGameOverDialog) {
-                AlertDialog(
-                    onDismissRequest = {},
-                    title = { Text(stringResource(R.string.dialog_game_over_title)) },
-                    text = { Text(stringResource(R.string.dialog_final_score, score)) },
-                    confirmButton = {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Button(
-                                onClick = {
-                                    showGameOverDialog = false
-                                    navController.navigate(Screen.Welcome.route) {
-                                        popUpTo(Screen.Welcome.route) { inclusive = true }
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(context.getColor(R.color.material_blue))
-                                )
+                // Win dialog
+                if (showWinDialog) {
+                    AlertDialog(
+                        onDismissRequest = {},
+                        title = {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text(stringResource(R.string.button_back_to_main))
+                                Text(
+                                    text = stringResource(R.string.dialog_congratulations),
+                                    style = MaterialTheme.typography.headlineSmall.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    color = Color(context.getColor(R.color.material_green)),
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = stringResource(R.string.dialog_you_won),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    textAlign = TextAlign.Center
+                                )
                             }
-                            Button(
-                                onClick = {
-                                    showGameOverDialog = false
-                                    tiles = generateTiles()
-                                    score = 0
-                                    chances = 5
-                                    timeLeft = 90
-                                    selectedNumbers = emptyList()
-                                    correctPairsCounter = 0
-                                    totalMatchedPairs = 0
-                                    emptyPosition = 8
-                                    gameState = GameState.PREVIEW
+                        },
+                        text = {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.dialog_final_score, score),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = stringResource(
+                                        R.string.dialog_pairs_matched,
+                                        totalMatchedPairs
+                                    ),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = stringResource(
+                                        R.string.dialog_chances_remaining,
+                                        chances
+                                    ),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        showWinDialog = false
+                                        navController.navigate(Screen.Welcome.route) {
+                                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(context.getColor(R.color.material_blue))
+                                    )
+                                ) {
+                                    Text(stringResource(R.string.button_back_to_main))
                                 }
-                            ) {
-                                Text(stringResource(R.string.button_play_again))
+                                Button(
+                                    onClick = {
+                                        showWinDialog = false
+                                        tiles = generateTiles()
+                                        score = 0
+                                        chances = 5
+                                        timeLeft = 90
+                                        selectedNumbers = emptyList()
+                                        correctPairsCounter = 0
+                                        totalMatchedPairs = 0
+                                        emptyPosition = 8
+                                        gameState = GameState.PREVIEW
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(context.getColor(R.color.material_green))
+                                    )
+                                ) {
+                                    Text(stringResource(R.string.button_play_again))
+                                }
                             }
                         }
-                    }
-                )
-            }
+                    )
+                }
 
-            // Win dialog
-            if (showWinDialog) {
-                AlertDialog(
-                    onDismissRequest = {},
-                    title = {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.dialog_congratulations),
-                                style = MaterialTheme.typography.headlineSmall.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = Color(context.getColor(R.color.material_green)),
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = stringResource(R.string.dialog_you_won),
-                                style = MaterialTheme.typography.titleMedium,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    },
-                    text = {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.dialog_final_score, score),
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = stringResource(R.string.dialog_pairs_matched, totalMatchedPairs),
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = stringResource(R.string.dialog_chances_remaining, chances),
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    },
-                    confirmButton = {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Button(
-                                onClick = {
-                                    showWinDialog = false
-                                    navController.navigate(Screen.Welcome.route) {
-                                        popUpTo(Screen.Welcome.route) { inclusive = true }
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(context.getColor(R.color.material_blue))
-                                )
-                            ) {
-                                Text(stringResource(R.string.button_back_to_main))
-                            }
-                            Button(
-                                onClick = {
-                                    showWinDialog = false
-                                    tiles = generateTiles()
-                                    score = 0
-                                    chances = 5
-                                    timeLeft = 90
-                                    selectedNumbers = emptyList()
-                                    correctPairsCounter = 0
-                                    totalMatchedPairs = 0
-                                    emptyPosition = 8
-                                    gameState = GameState.PREVIEW
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(context.getColor(R.color.material_green))
-                                )
-                            ) {
-                                Text(stringResource(R.string.button_play_again))
-                            }
-                        }
+                // Update high score when game is over (either win or lose)
+                LaunchedEffect(gameState) {
+                    if (gameState == GameState.WIN || gameState == GameState.GAME_OVER) {
+                        gameViewModel.updateHighScore(score)
                     }
-                )
-            }
-
-            // Update high score when game is over (either win or lose)
-            LaunchedEffect(gameState) {
-                if (gameState == GameState.WIN || gameState == GameState.GAME_OVER) {
-                    gameViewModel.updateHighScore(score)
                 }
             }
         }
     }
-}
 
 @Preview(showBackground = true)
 @Composable
