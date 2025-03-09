@@ -537,7 +537,8 @@ fun MultiplayerScreen(navController: NavController) {
                                     }
                                 },
                                 incorrectPair = viewModel.incorrectPair,
-                                highlightedPositions = if (viewModel.isSelectingMove) viewModel.movableTilePositions else emptySet()
+                                highlightedPositions = if (viewModel.isSelectingMove) viewModel.movableTilePositions else emptySet(),
+                                isMultiplayer = true
                             )
                         }
                     }

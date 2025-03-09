@@ -24,7 +24,8 @@ fun GameBoard(
     onNumberClick: (Tile, Int) -> Unit,
     onTileClick: (Int) -> Unit,
     incorrectPair: List<SelectedNumber> = emptyList(),
-    highlightedPositions: Set<Int> = emptySet()
+    highlightedPositions: Set<Int> = emptySet(),
+    isMultiplayer: Boolean = false
 ) {
     val context = LocalContext.current
 
@@ -73,6 +74,7 @@ fun GameBoard(
                     onTileClick = { onTileClick(tile.position) },
                     incorrectPair = incorrectPair,
                     isHighlighted = tile.position in highlightedPositions,
+                    isMultiplayer = isMultiplayer,
                     modifier = Modifier.zIndex(1f)
                 )
             }

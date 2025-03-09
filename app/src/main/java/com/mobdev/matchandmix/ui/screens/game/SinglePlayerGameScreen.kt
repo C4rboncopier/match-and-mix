@@ -540,7 +540,8 @@ fun SinglePlayerGameScreen(navController: NavController) {
                                 }
                             },
                             incorrectPair = incorrectPair,
-                            highlightedPositions = highlightedPositions
+                            highlightedPositions = highlightedPositions,
+                            isMultiplayer = false
                         )
                     }
                 }
