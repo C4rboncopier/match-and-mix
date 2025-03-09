@@ -101,6 +101,18 @@ class MultiplayerViewModel : ViewModel() {
     private var previewTimerJob: kotlinx.coroutines.Job? = null
     private var turnTimerJob: kotlinx.coroutines.Job? = null
 
+    // Add a new field to track the number of revealed numbers in the current turn
+    private var revealedNumbersCount by mutableStateOf(0)
+    
+    // Add a field to track the last timer sync timestamp from Firebase
+    private var lastTimerSyncTimestamp: Long = 0
+    
+    // Add a field to store the server-synchronized turn start time
+    private var turnStartTimestamp by mutableStateOf<Long?>(null)
+
+    // Add a variable to track if we're currently updating the timer
+    private var isUpdatingTimer = false
+
     override fun onCleared() {
         super.onCleared()
         previewTimerJob?.cancel()
@@ -179,18 +191,121 @@ class MultiplayerViewModel : ViewModel() {
     }
 
     private fun startTurnTimer() {
+        // Cancel any existing timer job first
         turnTimerJob?.cancel()
-        turnTimeLeft = 15 // Reset timer to 15 seconds
-        turnTimerJob = viewModelScope.launch {
-            while (turnTimeLeft > 0 && !isPreviewPhase) { // Add check for preview phase
-                delay(1000)
-                turnTimeLeft--
-                
-                // Only force move selection for the current player and when game has actually started
-                if (turnTimeLeft == 0 && isMyTurn && !isSelectingMove && gameStarted && !isPreviewPhase) {
-                    isSelectingMove = true
-                    selectedNumbers = emptyList()
+        turnTimerJob = null
+        
+        // Don't start timer if player is selecting a move
+        if (isSelectingMove) {
+            // Make sure the timer is set to 15 but doesn't count down
+            turnTimeLeft = 15
+            return
+        }
+        
+        // First, ensure Firebase has the correct initial timer value
+        viewModelScope.launch {
+            try {
+                isUpdatingTimer = true
+                gameCode?.let { code ->
+                    val currentTimestamp = System.currentTimeMillis()
+                    
+                    firestore.collection("game_sessions")
+                        .document(code)
+                        .update(mapOf(
+                            "turnStartTimestamp" to currentTimestamp,
+                            "turnTimeLeft" to 15, // Always reset to 15 seconds
+                            "isSelectingMove" to false // Make sure this is synced to Firebase
+                        ))
+                        .await()
+                        
+                    turnStartTimestamp = currentTimestamp
+                    turnTimeLeft = 15 // Ensure local state is also reset
+                    isUpdatingTimer = false
+                    
+                    // Now start the timer job
+                    turnTimerJob = viewModelScope.launch {
+                        while (turnTimeLeft > 0 && !isPreviewPhase && !isSelectingMove && isMyTurn) {
+                            delay(1000)
+                            
+                            // Check again if we're selecting a move or it's no longer our turn
+                            if (isSelectingMove || !isMyTurn) {
+                                break
+                            }
+                            
+                            turnTimeLeft--
+                            
+                            // Update the timer value in Firebase every second when it's my turn
+                            if (isMyTurn && !isSelectingMove && gameStarted && !isPreviewPhase) {
+                                updateTimerInFirebase(turnTimeLeft)
+                            }
+                            
+                            // Only force move selection for the current player and when game has actually started
+                            if (turnTimeLeft == 0 && isMyTurn && !isSelectingMove && gameStarted && !isPreviewPhase) {
+                                isSelectingMove = true
+                                selectedNumbers = emptyList()
+                                revealedNumbersCount = 0 // Reset the counter when turn ends
+                                
+                                // Update isSelectingMove in Firebase
+                                updateSelectionStateInFirebase(true)
+                            }
+                        }
+                    }
                 }
+            } catch (e: Exception) {
+                errorMessage = "Failed to start turn timer: ${e.message}"
+                isUpdatingTimer = false
+                
+                // Even if Firebase update fails, still start a local timer
+                turnTimeLeft = 15
+                turnTimerJob = viewModelScope.launch {
+                    while (turnTimeLeft > 0 && !isPreviewPhase && !isSelectingMove && isMyTurn) {
+                        delay(1000)
+                        
+                        // Check again if we're selecting a move or it's no longer our turn
+                        if (isSelectingMove || !isMyTurn) {
+                            break
+                        }
+                        
+                        turnTimeLeft--
+                        
+                        // Try to update Firebase again
+                        if (isMyTurn && !isSelectingMove && gameStarted && !isPreviewPhase) {
+                            updateTimerInFirebase(turnTimeLeft)
+                        }
+                        
+                        if (turnTimeLeft == 0 && isMyTurn && !isSelectingMove && gameStarted && !isPreviewPhase) {
+                            isSelectingMove = true
+                            selectedNumbers = emptyList()
+                            revealedNumbersCount = 0
+                            
+                            // Update isSelectingMove in Firebase
+                            updateSelectionStateInFirebase(true)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Modify the updateTimerInFirebase function to be more robust
+    private fun updateTimerInFirebase(timeLeft: Int) {
+        if (isUpdatingTimer) return // Prevent concurrent updates
+        
+        isUpdatingTimer = true
+        viewModelScope.launch {
+            try {
+                gameCode?.let { code ->
+                    firestore.collection("game_sessions")
+                        .document(code)
+                        .update(mapOf(
+                            "turnTimeLeft" to timeLeft
+                        ))
+                        .await()
+                }
+            } catch (e: Exception) {
+                // Silently fail - not critical if a single timer update fails
+            } finally {
+                isUpdatingTimer = false
             }
         }
     }
@@ -200,7 +315,9 @@ class MultiplayerViewModel : ViewModel() {
             try {
                 // Cancel any existing timers first
                 previewTimerJob?.cancel()
+                previewTimerJob = null
                 turnTimerJob?.cancel()
+                turnTimerJob = null
                 
                 // Hide all numbers while preserving matched states
                 val updatedTiles = tiles.map { tile ->
@@ -213,6 +330,11 @@ class MultiplayerViewModel : ViewModel() {
                 // Update local state immediately
                 tiles = updatedTiles
                 isPreviewPhase = false // Set this before starting the turn timer
+                isSelectingMove = false // Make sure we're not in selection mode
+                
+                // Get host ID before updating Firebase
+                val hostId = getHostId()
+                val currentTimestamp = System.currentTimeMillis()
                 
                 gameCode?.let { code ->
                     firestore.collection("game_sessions")
@@ -230,14 +352,26 @@ class MultiplayerViewModel : ViewModel() {
                             "hostWantsToStart" to false,
                             "guestWantsToStart" to false,
                             "gameStarted" to true,
-                            "currentTurn" to getHostId() // Host always starts first
+                            "currentTurn" to hostId, // Host always starts first
+                            "isSelectingMove" to false, // Make sure selection mode is off
+                            "turnTimeLeft" to 15, // Reset timer
+                            "turnStartTimestamp" to currentTimestamp // Reset timestamp
                         ))
                         .await()
                 }
                 
                 gameStarted = true
-                // Start the turn timer after everything is set up
-                startTurnTimer()
+                
+                // Start the turn timer only if I'm the host
+                val isHost = (gameState as? MultiplayerGameState.InGame)?.isHost == true
+                if (isHost) {
+                    isMyTurn = true
+                    // Start the turn timer after everything is set up
+                    startTurnTimer()
+                } else {
+                    isMyTurn = false
+                    turnTimeLeft = 15 // Just set the timer value for display
+                }
             } catch (e: Exception) {
                 errorMessage = "Failed to start game: ${e.message}"
             }
@@ -261,6 +395,7 @@ class MultiplayerViewModel : ViewModel() {
             try {
                 val newSelectedNumbers = selectedNumbers + SelectedNumber(tile, numberIndex)
                 selectedNumbers = newSelectedNumbers
+                revealedNumbersCount++ // Increment the counter
 
                 // Update the revealed state in Firebase while preserving matched state
                 val updatedTiles = tiles.map {
@@ -279,8 +414,6 @@ class MultiplayerViewModel : ViewModel() {
                 saveBoardToFirebase(updatedTiles)
 
                 if (newSelectedNumbers.size == 2) {
-                    turnTimerJob?.cancel() // Stop the turn timer
-                    
                     // Check if numbers match
                     val first = newSelectedNumbers[0]
                     val second = newSelectedNumbers[1]
@@ -288,7 +421,6 @@ class MultiplayerViewModel : ViewModel() {
                     if (first.tile.numbers[first.numberIndex] == second.tile.numbers[second.numberIndex]) {
                         // Correct pair - handle it first before any other updates
                         handleCorrectPair(first.tile.numbers[first.numberIndex])
-                        startTurnTimer() // Reset timer for next pair
                     } else {
                         // Incorrect pair - show red background briefly
                         incorrectPair = newSelectedNumbers
@@ -306,13 +438,43 @@ class MultiplayerViewModel : ViewModel() {
                             } else tile
                         }
                         
-                        // Update local state first
-                        tiles = updatedTilesAfterDelay
-                        
-                        // Then update Firebase
-                        saveBoardToFirebase(updatedTilesAfterDelay)
+                        // Set isSelectingMove to true BEFORE updating Firebase
+                        // This ensures the timer stops immediately
                         isSelectingMove = true
                         selectedNumbers = emptyList()
+                        revealedNumbersCount = 0 // Reset counter after handling the pair
+                        
+                        // Cancel any existing timer job immediately
+                        turnTimerJob?.cancel()
+                        turnTimerJob = null
+                        turnTimeLeft = 15
+                        
+                        // Update local state
+                        tiles = updatedTilesAfterDelay
+                        
+                        // Then update Firebase with the updated tiles and reset timer
+                        gameCode?.let { code ->
+                            val currentTimestamp = System.currentTimeMillis()
+                            
+                            firestore.collection("game_sessions")
+                                .document(code)
+                                .update(mapOf(
+                                    "board" to updatedTilesAfterDelay.map { tile ->
+                                        mapOf(
+                                            "id" to tile.id.toString(),
+                                            "position" to tile.position,
+                                            "numbers" to tile.numbers,
+                                            "isRevealed" to tile.isRevealed,
+                                            "isMatched" to tile.isMatched
+                                        )
+                                    },
+                                    "incorrectPair" to emptyList<Map<String, Any>>(),
+                                    "turnStartTimestamp" to currentTimestamp,
+                                    "turnTimeLeft" to 15, // Reset to 15 seconds
+                                    "isSelectingMove" to true // Add this field to Firebase to sync selection state
+                                ))
+                                .await() // Wait for the update to complete
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -344,15 +506,17 @@ class MultiplayerViewModel : ViewModel() {
             // Update local state first
             tiles = updatedTiles
 
-            // Reset timer for both players
+            // Reset local timer
             turnTimerJob?.cancel()
-            startTurnTimer()
+            turnTimerJob = null
+            turnTimeLeft = 15
 
             // Then update Firebase with a transaction to ensure consistency
             gameCode?.let { code ->
                 val isHost = (gameState as? MultiplayerGameState.InGame)?.isHost == true
                 val scoreField = if (isHost) "hostScore" else "guestScore"
                 val newScore = if (isHost) myScore + 1 else opponentScore + 1
+                val currentTimestamp = System.currentTimeMillis()
 
                 firestore.runTransaction { transaction ->
                     val docRef = firestore.collection("game_sessions").document(code)
@@ -368,12 +532,19 @@ class MultiplayerViewModel : ViewModel() {
                         },
                         scoreField to newScore,
                         "incorrectPair" to emptyList<Map<String, Any>>(),
-                        "lastMatchTimestamp" to com.google.firebase.Timestamp.now() // Add timestamp for timer sync
+                        "lastMatchTimestamp" to com.google.firebase.Timestamp.now(), // Add timestamp for timer sync
+                        "turnStartTimestamp" to currentTimestamp, // Reset timer on match
+                        "turnTimeLeft" to 15, // Reset to 15 seconds
+                        "isSelectingMove" to false // Make sure selection mode is off
                     ))
                 }.await()
 
                 selectedNumbers = emptyList()
                 incorrectPair = emptyList()
+                revealedNumbersCount = 0 // Reset counter after handling the pair
+                
+                // Start a new timer job for consistent behavior
+                startTurnTimer()
             }
         } catch (e: Exception) {
             errorMessage = "Failed to handle correct pair: ${e.message}"
@@ -394,8 +565,27 @@ class MultiplayerViewModel : ViewModel() {
                     }
                 }
 
+                // Get opponent ID before updating Firebase
+                val opponentId = getOpponentId()
+                
+                // Update local state
+                tiles = updatedTiles.toList()
+                emptyPosition = fromPosition
+                
+                // Reset states
+                isSelectingMove = false
+                selectedNumbers = emptyList()
+                revealedNumbersCount = 0 // Reset counter when turn ends
+                
+                // Reset local timer for UI consistency
+                turnTimerJob?.cancel()
+                turnTimerJob = null
+                turnTimeLeft = 15
+
                 // Update Firebase
                 gameCode?.let { code ->
+                    val currentTimestamp = System.currentTimeMillis()
+                    
                     firestore.collection("game_sessions")
                         .document(code)
                         .update(
@@ -410,14 +600,16 @@ class MultiplayerViewModel : ViewModel() {
                                     )
                                 },
                                 "emptyPosition" to fromPosition,
-                                "currentTurn" to getOpponentId() // Switch turns
+                                "currentTurn" to opponentId, // Switch turns
+                                "turnStartTimestamp" to currentTimestamp, // Reset timer for next player
+                                "turnTimeLeft" to 15, // Reset to 15 seconds
+                                "isSelectingMove" to false // Reset selection state
                             )
                         )
                         .await()
-
-                    // Reset states
-                    isSelectingMove = false
-                    selectedNumbers = emptyList()
+                        
+                    // The opponent will start their timer when they receive the update
+                    // We don't need to start a timer here since it's no longer our turn
                 }
             } catch (e: Exception) {
                 errorMessage = "Failed to move tile: ${e.message}"
@@ -511,15 +703,88 @@ class MultiplayerViewModel : ViewModel() {
                         val currentUserId = auth.getCurrentUser()?.uid
                         val currentTurn = snapshot.getString("currentTurn")
                         val wasMyTurn = isMyTurn
+                        val wasSelectingMove = isSelectingMove
                         isMyTurn = currentTurn == currentUserId
+                        
+                        // Get selection state from Firebase
+                        val serverIsSelectingMove = snapshot.getBoolean("isSelectingMove") ?: false
+                        
+                        // Update local selection state if it's my turn
+                        if (isMyTurn) {
+                            val selectionChanged = isSelectingMove != serverIsSelectingMove
+                            isSelectingMove = serverIsSelectingMove
+                            
+                            // If selection state changed, make sure to cancel any running timer
+                            if (selectionChanged && isSelectingMove) {
+                                turnTimerJob?.cancel()
+                                turnTimerJob = null
+                                turnTimeLeft = 15
+                            }
+                        }
 
                         // Handle turn changes and timer
-                        if (wasMyTurn != isMyTurn || 
-                            gameStarted != (snapshot.getBoolean("gameStarted") ?: false) ||
-                            snapshot.get("lastMatchTimestamp") != null) { // Reset timer on match
-                            // Turn has changed or game has started or match was found, reset timer for both players
-                            turnTimerJob?.cancel()
-                            startTurnTimer()
+                        val serverTurnStartTimestamp = snapshot.getLong("turnStartTimestamp")
+                        val serverTurnTimeLeft = snapshot.getLong("turnTimeLeft")?.toInt() ?: 15
+                        
+                        // Synchronize timer with server
+                        if (serverTurnStartTimestamp != null) {
+                            // If turn just changed to me, start a new timer
+                            if (!wasMyTurn && isMyTurn) {
+                                // Cancel any existing timer first
+                                turnTimerJob?.cancel()
+                                turnTimerJob = null
+                                
+                                if (!isSelectingMove) {
+                                    // Start a new timer
+                                    startTurnTimer()
+                                } else {
+                                    // If we're selecting a move, just set the timer to 15 but don't start it
+                                    turnTimeLeft = 15
+                                }
+                            }
+                            // If it's not my turn, always use the server's timer value
+                            else if (!isMyTurn) {
+                                // Always update the timer value for the opponent's turn
+                                turnTimeLeft = serverTurnTimeLeft
+                                
+                                // Cancel any existing timer job
+                                turnTimerJob?.cancel()
+                                turnTimerJob = null
+                                
+                                // Start a local timer just for display purposes, but only if the opponent is not selecting a move
+                                if (!isPreviewPhase && gameStarted && !serverIsSelectingMove) {
+                                    turnTimerJob = viewModelScope.launch {
+                                        // Start from the server's time
+                                        var localTimeLeft = serverTurnTimeLeft
+                                        
+                                        while (localTimeLeft > 0 && !isMyTurn && !isPreviewPhase) {
+                                            delay(1000)
+                                            localTimeLeft--
+                                            turnTimeLeft = localTimeLeft
+                                        }
+                                    }
+                                }
+                            } 
+                            // If it was already my turn, handle selection state changes
+                            else if (wasMyTurn && isMyTurn) {
+                                // If selection state changed, handle timer accordingly
+                                if (wasSelectingMove != isSelectingMove) {
+                                    turnTimerJob?.cancel()
+                                    turnTimerJob = null
+                                    
+                                    if (!isSelectingMove) {
+                                        // If we're no longer selecting a move, start a new timer
+                                        startTurnTimer()
+                                    } else {
+                                        // If we're now selecting a move, just set the timer to 15 but don't start it
+                                        turnTimeLeft = 15
+                                    }
+                                }
+                                // Otherwise, only update if there's a significant difference and we're not selecting a move
+                                else if (!isSelectingMove && Math.abs(serverTurnTimeLeft - turnTimeLeft) > 2) {
+                                    turnTimeLeft = serverTurnTimeLeft
+                                }
+                            }
                         }
 
                         // Update ready states
@@ -798,7 +1063,10 @@ class MultiplayerViewModel : ViewModel() {
                     "hostReady" to false,
                     "guestReady" to false,
                     "hostWantsToStart" to false,
-                    "guestWantsToStart" to false
+                    "guestWantsToStart" to false,
+                    "turnStartTimestamp" to System.currentTimeMillis(),
+                    "turnTimeLeft" to 15,
+                    "isSelectingMove" to false // Add the new field
                 )
 
                 firestore.collection("game_sessions")
@@ -918,7 +1186,10 @@ class MultiplayerViewModel : ViewModel() {
                         "hostReady" to false,
                         "guestReady" to false,
                         "hostWantsToStart" to false,
-                        "guestWantsToStart" to false
+                        "guestWantsToStart" to false,
+                        "turnStartTimestamp" to System.currentTimeMillis(),
+                        "turnTimeLeft" to 15,
+                        "isSelectingMove" to false // Add the new field
                     )
 
                     firestore.collection("game_sessions")
@@ -939,6 +1210,24 @@ class MultiplayerViewModel : ViewModel() {
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Failed to join or create game"
                 gameState = MultiplayerGameState.GameOver(false)
+            }
+        }
+    }
+
+    // Add a helper function to update the selection state in Firebase
+    private fun updateSelectionStateInFirebase(isSelecting: Boolean) {
+        viewModelScope.launch {
+            try {
+                gameCode?.let { code ->
+                    firestore.collection("game_sessions")
+                        .document(code)
+                        .update(mapOf(
+                            "isSelectingMove" to isSelecting
+                        ))
+                        .await() // Wait for the update to complete
+                }
+            } catch (e: Exception) {
+                // Silently fail - not critical
             }
         }
     }
