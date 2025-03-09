@@ -208,20 +208,19 @@ fun MultiplayerScreen(navController: NavController) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(
-                    onClick = { showExitConfirmation = true }
+                Box(modifier = Modifier
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back to menu",
-                        tint = Color(context.getColor(R.color.material_blue))
+                    IconButtonLogo(
+                        clickedIconRes = R.drawable.backarrow,
+                        defaultIconRes = R.drawable.backarrow,
+                        onClick = { showExitConfirmation = true },
                     )
                 }
 
                 Text(
                     text = "Multiplayer",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.ExtraLight,
+                    fontSize = 35.sp,
+                    fontWeight = FontWeight.Thin,
                     fontFamily = FontFamily(Font(R.font.sigmarregular)),
                     color = Color(0xff2962ff)
                 )
@@ -738,6 +737,35 @@ fun ImageButtonWithLabelRow(
             fontWeight = FontWeight.Light,
             color = Color.White,
             modifier = Modifier.align(Alignment.Center)
+        )
+    }
+}
+
+@Composable
+fun IconButtonLogo(
+    defaultIconRes: Int,
+    clickedIconRes: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var isClicked by remember { mutableStateOf(false) }
+
+    IconButton(
+        onClick = {
+            isClicked = true
+            onClick()
+            CoroutineScope(Dispatchers.Main).launch {
+                delay(100) // Reset image after 100ms
+                isClicked = false
+            }
+        },
+        modifier = Modifier.size(40.dp)
+    ) {
+        Image(
+            painter = painterResource(id = if (isClicked) clickedIconRes else defaultIconRes),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.size(25.dp)
         )
     }
 }

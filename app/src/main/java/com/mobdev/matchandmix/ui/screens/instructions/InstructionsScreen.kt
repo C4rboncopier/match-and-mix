@@ -63,16 +63,16 @@ fun InstructionsScreen(navController: NavController) {
                 Box(modifier = Modifier
                 ) {
                     IconButtonLogo(
-                        clickedIconRes = R.drawable.backarrow_clicked,
-                        defaultIconRes = R.drawable.backarrow_idle,
+                        clickedIconRes = R.drawable.backarrow,
+                        defaultIconRes = R.drawable.backarrow,
                         onClick = { navController.navigateUp() },
                     )
                 }
                 Text(
                     text = stringResource(R.string.instructions_title),
-                    fontSize = 32.sp,
-                    fontFamily = FontFamily(Font(R.font.ovoregular)),
-                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 35.sp,
+                    fontFamily = FontFamily(Font(R.font.sigmarregular)),
+                    fontWeight = FontWeight.ExtraLight,
                     color = MaterialTheme.colorScheme.primary
                 )
                 // Empty box for alignment
@@ -88,7 +88,7 @@ fun InstructionsScreen(navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 InstructionSection(
-                    title = stringResource(R.string.instructions_section_objective_title),
+                    title = stringResource(R.string.instructions_section_objective_title) ,
                     content = stringResource(R.string.instructions_section_objective_content)
                 )
 
@@ -138,14 +138,16 @@ private fun InstructionSection(
         ) {
             Text(
                 text = title,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp,
+                fontFamily = FontFamily(Font(R.font.dangrekregular)),
+                fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             Text(
                 text = content,
                 fontSize = 16.sp,
+                fontFamily = FontFamily(Font(R.font.ovoregular)),
                 lineHeight = 24.sp,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -171,13 +173,13 @@ fun IconButtonLogo(
                 isClicked = false
             }
         },
-        modifier = Modifier.size(60.dp)
+        modifier = Modifier.size(50.dp)
     ) {
         Image(
             painter = painterResource(id = if (isClicked) clickedIconRes else defaultIconRes),
             contentDescription = null,
             contentScale = ContentScale.Fit,
-            modifier = Modifier.size(45.dp)
+            modifier = Modifier.size(35.dp)
         )
     }
 }

@@ -238,30 +238,29 @@ fun SinglePlayerGameScreen(navController: NavController) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(
-                    onClick = {
-                        if (gameState == GameState.INITIAL) {
-                            navController.popBackStack(
-                                route = Screen.Welcome.route,
-                                inclusive = false
-                            )
-                        } else {
-                            showExitConfirmation = true
-                        }
-                    }
+                Box(modifier = Modifier
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back to menu",
-                        tint = Color(context.getColor(R.color.material_blue))
+                    IconButtonLogo(
+                        clickedIconRes = R.drawable.backarrow,
+                        defaultIconRes = R.drawable.backarrow,
+                        onClick = {
+                            if (gameState == GameState.INITIAL) {
+                                navController.popBackStack(
+                                    route = Screen.Welcome.route,
+                                    inclusive = false
+                                )
+                            } else {
+                                showExitConfirmation = true
+                            }
+                        },
                     )
                 }
 
                 Text(
                     text = stringResource(R.string.game_title),
-                    fontSize = 32.sp,
+                    fontSize = 33.sp,
                     fontFamily = FontFamily(Font(R.font.sigmarregular)),
-                    fontWeight = FontWeight.Thin,
+                    fontWeight = FontWeight.ExtraLight,
                     color = Color(0xff2962ff)
                 )
 

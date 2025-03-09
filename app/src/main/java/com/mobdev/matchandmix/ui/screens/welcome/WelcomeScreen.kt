@@ -19,6 +19,7 @@
     import androidx.compose.ui.text.font.FontFamily
     import androidx.compose.ui.text.font.FontStyle
     import androidx.compose.ui.text.font.FontWeight
+    import androidx.compose.ui.text.style.TextAlign
     import androidx.compose.ui.unit.dp
     import androidx.compose.ui.unit.sp
     import androidx.navigation.NavController
@@ -74,59 +75,24 @@
                         .padding(bottom = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        val titleGrid = listOf(
-                            listOf('M', 'A', 'T', 'C', 'H'),
-                            listOf(null, null, '&', null, null),
-                            listOf(null, 'M', 'I', 'X', null)
-                        )
-                        val colorMapping = mapOf(
-                            'M' to Color(0xFFFFA500), // Bright Orange
-                            'A' to Color(0xFF00E5FF), // Electric Cyan
-                            'T' to Color(0xFF7CFC00), // Neon Green
-                            'C' to Color(0xFFFFD700), // Vivid Gold
-                            'H' to Color(0xFF40E0D0), // Turquoise
-                            '&' to Color(0xFFFF69B4), // Hot Pink
-                            'I' to Color(0xFFFFC0CB), // Light Pink
-                            'X' to Color(0xFFD1C4E9), // Light Purple
-                        )
-                        val grayColor = Color.White // Light Gray for empty spaces
-                        val borderColor = Color.Gray
+                    Image(
+                        painter = painterResource(id = R.drawable.m_mlogo),
+                        contentDescription = "Background",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .size(320.dp)
 
-                        titleGrid.forEach { row ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                                row.forEach { letter ->
-                                    Box(
-                                        modifier = Modifier
-                                            .size(52.dp)
-                                            .clip(CircleShape)
-                                            .background(colorMapping[letter] ?: grayColor)
-                                            .border(2.dp, borderColor, CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        if (letter != null) {
-                                            Text(
-                                                text = letter.toString(),
-                                                fontSize = 28.sp,
-                                                fontFamily = FontFamily(Font(R.font.dangrekregular)),
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = Color.Black
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(6.dp))
-                        }
-                    }
+
+
+                    )
                 }
-                Spacer(modifier = Modifier.padding(12.dp))
 
                 // Welcome Message - only show if user is logged in
                 if (username != null) {
                     Text(
-                        text = "Welcome back, $username!",
+                        text = "Welcome back, \n $username!",
                         fontSize = 30.sp,
+                        textAlign = TextAlign.Center,
                         fontStyle = FontStyle.Italic,
                         fontFamily = FontFamily(Font(R.font.dangrekregular)),
                         color = Color(0xff2962ff),
@@ -328,13 +294,13 @@
                     isClicked = false
                 }
             },
-            modifier = Modifier.size(80.dp)
+            modifier = Modifier.size(68.dp)
         ) {
             Image(
                 painter = painterResource(id = if (isClicked) clickedIconRes else defaultIconRes),
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
-                modifier = Modifier.size(65.dp)
+                modifier = Modifier.size(55.dp)
             )
         }
     }
