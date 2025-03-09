@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.mobdev.matchandmix.R
+import com.mobdev.matchandmix.ui.screens.instructions.IconButtonLogo
 import com.mobdev.matchandmix.viewmodel.LeaderboardViewModel
 
 @Composable
@@ -63,18 +64,19 @@ fun LeaderboardsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { navController.navigateUp() }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.primary
+                Box(modifier = Modifier
+                ) {
+                    IconButtonLogo(
+                        clickedIconRes = R.drawable.backarrow,
+                        defaultIconRes = R.drawable.backarrow,
+                        onClick = { navController.navigateUp() },
                     )
                 }
                 Text(
                     text = "Leaderboards",
-                    fontSize = 28.sp,
-                    fontFamily = FontFamily(Font(R.font.ovoregular)),
-                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 33.sp,
+                    fontFamily = FontFamily(Font(R.font.sigmarregular)),
+                    fontWeight = FontWeight.ExtraLight,
                     color = MaterialTheme.colorScheme.primary
                 )
                 // Empty box for alignment
@@ -225,3 +227,4 @@ fun LeaderboardsScreen(
         }
     }
 }
+
