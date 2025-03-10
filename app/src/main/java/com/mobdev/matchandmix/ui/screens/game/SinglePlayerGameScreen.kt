@@ -31,19 +31,27 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.window.Dialog
+import com.mobdev.matchandmix.ui.screens.welcome.ImageButtonWithLabel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 @Composable
 fun SinglePlayerGameScreen(navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val gameViewModel: GameViewModel = viewModel()
+    val coroutineScope = rememberCoroutineScope()
 
     var gameState by remember { mutableStateOf(GameState.INITIAL) }
     var tiles by remember {
@@ -102,32 +110,18 @@ fun SinglePlayerGameScreen(navController: NavController) {
     }
 
     // Back button confirmation dialog
+    //Exit Game Dialog
     if (showExitConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showExitConfirmation = false },
-            title = { Text("Exit Game") },
-            text = { Text("Are you sure you want to exit? Your progress will be lost.") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showExitConfirmation = false
-                        if (gameState == GameState.PREVIEW) {
-                            navController.popBackStack()
-                        } else {
-                            navController.navigate(Screen.Welcome.route) {
-                                popUpTo(Screen.Welcome.route) { inclusive = true }
-                            }
-                        }
+        ExitConfirmationDialog(
+            onDismiss = { showExitConfirmation = false },
+            onConfirm = {
+                showExitConfirmation = false
+                if (gameState == GameState.PREVIEW) {
+                    navController.popBackStack()
+                } else {
+                    navController.navigate(Screen.Welcome.route) {
+                        popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
-                ) {
-                    Text("Yes, Exit")
-                }
-            },
-            dismissButton = {
-                Button(
-                    onClick = { showExitConfirmation = false }
-                ) {
-                    Text("Cancel")
                 }
             }
         )
@@ -545,194 +539,94 @@ fun SinglePlayerGameScreen(navController: NavController) {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
 
                 // Play Game button (shown in INITIAL state)
                 if (gameState == GameState.INITIAL) {
-                    Button(
+                    ImageButtonWithLabelSP(
+                        defaultImageRes = R.drawable.button_1_idle,
+                        clickedImageRes = R.drawable.button_1_clicked,
+                        text = "Play Game",
+
                         onClick = {
                             tiles = generateTiles()  // Generate new tiles with visible numbers
-                            gameState = GameState.PREVIEW  // Move to preview state
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xff2962ff)
-                        ),
-                        modifier = Modifier
-                            .height(48.dp)
-                            .width(200.dp),
-                        shape = RoundedCornerShape(24.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.button_play_game),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                // Start Game button (shown in PREVIEW state)
-                if (gameState == GameState.PREVIEW) {
-                    Button(
-                        onClick = {
-                            startGame(tiles, gameState) {
-                                tiles = it; gameState = GameState.PLAYING
+                            coroutineScope.launch{
+                                delay(130)
+                                gameState = GameState.PREVIEW  // Move to preview state
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(context.getColor(R.color.material_green))
-                        ),
-                        modifier = Modifier
-                            .height(48.dp)
-                            .width(200.dp),
-                        shape = RoundedCornerShape(24.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.button_start_game),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                        modifier = Modifier.scale(0.9f)
+                    )
                 }
+                // Start Game button (shown in PREVIEW state)
+                if (gameState == GameState.PREVIEW) {
+                    ImageButtonWithLabelSP(
+                        defaultImageRes = R.drawable.button_2_idle,
+                        clickedImageRes = R.drawable.button_2_click,
+                        text = "Start Game",
+                        onClick = {
+                            coroutineScope.launch {
+                                delay(130)
+                                startGame(tiles, gameState) {
+                                    tiles = it; gameState = GameState.PLAYING
+                                }
+                            }
+                        },
+                        modifier = Modifier.scale(0.9f)
+                    )
+                }
+
 
                 // Game Over dialog
                 if (showGameOverDialog) {
-                    AlertDialog(
-                        onDismissRequest = {},
-                        title = { Text(stringResource(R.string.dialog_game_over_title)) },
-                        text = { Text(stringResource(R.string.dialog_final_score, score)) },
-                        confirmButton = {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Button(
-                                    onClick = {
-                                        showGameOverDialog = false
-                                        navController.navigate(Screen.Welcome.route) {
-                                            popUpTo(Screen.Welcome.route) { inclusive = true }
-                                        }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(context.getColor(R.color.material_blue))
-                                    )
-                                ) {
-                                    Text(stringResource(R.string.button_back_to_main))
-                                }
-                                Button(
-                                    onClick = {
-                                        showGameOverDialog = false
-                                        tiles = generateTiles()
-                                        score = 0
-                                        chances = 5
-                                        timeLeft = 90
-                                        selectedNumbers = emptyList()
-                                        correctPairsCounter = 0
-                                        totalMatchedPairs = 0
-                                        emptyPosition = 8
-                                        gameState = GameState.PREVIEW
-                                    }
-                                ) {
-                                    Text(stringResource(R.string.button_play_again))
-                                }
+                    GameOverDialog(
+                        score = score,
+                        onBackToMain = {
+                            showGameOverDialog = false
+                            navController.navigate(Screen.Welcome.route) {
+                                popUpTo(Screen.Welcome.route) { inclusive = true }
                             }
+                        },
+                        onPlayAgain = {
+                            showGameOverDialog = false
+                            tiles = generateTiles()
+                            score = 0
+                            chances = 5
+                            timeLeft = 90
+                            selectedNumbers = emptyList()
+                            correctPairsCounter = 0
+                            totalMatchedPairs = 0
+                            emptyPosition = 8
+                            gameState = GameState.PREVIEW
                         }
                     )
                 }
 
                 // Win dialog
-                if (showWinDialog) {
-                    AlertDialog(
-                        onDismissRequest = {},
-                        title = {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.dialog_congratulations),
-                                    style = MaterialTheme.typography.headlineSmall.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    color = Color(context.getColor(R.color.material_green)),
-                                    textAlign = TextAlign.Center
-                                )
-                                Text(
-                                    text = stringResource(R.string.dialog_you_won),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        },
-                        text = {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.dialog_final_score, score),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center
-                                )
-                                Text(
-                                    text = stringResource(
-                                        R.string.dialog_pairs_matched,
-                                        totalMatchedPairs
-                                    ),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center
-                                )
-                                Text(
-                                    text = stringResource(
-                                        R.string.dialog_chances_remaining,
-                                        chances
-                                    ),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        },
-                        confirmButton = {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Button(
-                                    onClick = {
-                                        showWinDialog = false
-                                        navController.navigate(Screen.Welcome.route) {
-                                            popUpTo(Screen.Welcome.route) { inclusive = true }
-                                        }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(context.getColor(R.color.material_blue))
-                                    )
-                                ) {
-                                    Text(stringResource(R.string.button_back_to_main))
-                                }
-                                Button(
-                                    onClick = {
-                                        showWinDialog = false
-                                        tiles = generateTiles()
-                                        score = 0
-                                        chances = 5
-                                        timeLeft = 90
-                                        selectedNumbers = emptyList()
-                                        correctPairsCounter = 0
-                                        totalMatchedPairs = 0
-                                        emptyPosition = 8
-                                        gameState = GameState.PREVIEW
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(context.getColor(R.color.material_green))
-                                    )
-                                ) {
-                                    Text(stringResource(R.string.button_play_again))
-                                }
-                            }
+            if (showWinDialog) {
+                WinDialog(
+                    score = score,
+                    totalMatchedPairs = totalMatchedPairs,
+                    chances = chances,
+                    onBackToMain = {
+                        showWinDialog = false
+                        navController.navigate(Screen.Welcome.route) {
+                            popUpTo(Screen.Welcome.route) { inclusive = true }
                         }
-                    )
-                }
+                    },
+                    onPlayAgain = {
+                        showWinDialog = false
+                        tiles = generateTiles()
+                        score = 0
+                        chances = 5
+                        timeLeft = 90
+                        selectedNumbers = emptyList()
+                        correctPairsCounter = 0
+                        totalMatchedPairs = 0
+                        emptyPosition = 8
+                        gameState = GameState.PREVIEW
+                    }
+                )
+            }
 
                 // Update high score when game is over (either win or lose)
                 LaunchedEffect(gameState) {
@@ -743,9 +637,338 @@ fun SinglePlayerGameScreen(navController: NavController) {
             }
         }
     }
+@Composable
+fun ExitConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Box(
+            modifier = Modifier
+                .background(Color(0xFFFFF9C4), shape = RoundedCornerShape(16.dp))
+                .padding(16.dp)
+                .height(180.dp)
+                .width(250.dp)
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Dialog Title
+                Text(
+                    text = "Exit Game",
+                    fontSize = 22.sp,
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Red
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Message
+                Text(
+                    text = "Are you sure you want to exit? Your progress will be lost.",
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Buttons (Images with Text Overlay)
+                Row {
+                    // Exit Button
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(110.dp)
+                            .clickable { onConfirm() }
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.button_2_click),
+                            contentDescription = "Exit",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text(
+                            text = "Exit",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(20.dp))
+
+                    // Cancel Button
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(110.dp)
+                            .clickable { onDismiss() }
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.button_1_clicked),
+                            contentDescription = "Cancel",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text(
+                            text = "Cancel",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WinDialog(
+    score: Int,
+    totalMatchedPairs: Int,
+    chances: Int,
+    onBackToMain: () -> Unit,
+    onPlayAgain: () -> Unit
+) {
+    Dialog(onDismissRequest = {}) {
+        Box(
+            modifier = Modifier
+                .background(Color(0xFFFFF9C4), shape = RoundedCornerShape(16.dp))
+                .padding(16.dp)
+                .height(250.dp)
+                .width(350.dp)
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Title
+                Text(
+                    text = stringResource(R.string.dialog_congratulations),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.ExtraLight,
+                    fontFamily = FontFamily(Font(R.font.sigmarregular)),
+                    color = Color(0xFF9CCC65),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = stringResource(R.string.dialog_you_won),
+                    fontSize = 18.sp,
+                    fontFamily = FontFamily(Font(R.font.ovoregular)),
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Score Info
+                Text(
+                    text = stringResource(R.string.dialog_final_score, score),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily(Font(R.font.ovoregular)),
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = stringResource(R.string.dialog_pairs_matched, totalMatchedPairs),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily(Font(R.font.ovoregular)),
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = stringResource(R.string.dialog_chances_remaining, chances),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily(Font(R.font.ovoregular)),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Buttons
+                Row {
+                    // Back to Main Button
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(135.dp)
+                            .clickable { onBackToMain() }
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.button_2_click),
+                            contentDescription = "Back to Main",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text(
+                            text = stringResource(R.string.button_back_to_main),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(20.dp))
+
+
+                    // Play Again Button
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(135.dp)
+                            .clickable { onPlayAgain() }
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.button_1_clicked),
+                            contentDescription = "Play Again",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text(
+                            text = stringResource(R.string.button_play_again),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun GameOverDialog(
+    score: Int,
+    onBackToMain: () -> Unit,
+    onPlayAgain: () -> Unit
+) {
+    Dialog(onDismissRequest = {}) {
+        Box(
+            modifier = Modifier
+                .background(Color(0xFFFFF9C4), shape = RoundedCornerShape(16.dp))
+                .padding(16.dp)
+                .height(160.dp)
+                .width(270.dp)
+
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Title
+                Text(
+                    text = stringResource(R.string.dialog_game_over_title),
+                    fontSize = 25.sp,
+                    fontWeight = FontWeight.ExtraLight,
+                    fontFamily = FontFamily(Font(R.font.sigmarregular)),
+                    color = Color.Red,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Score Display
+                Text(
+                    text = stringResource(R.string.dialog_final_score, score),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily(Font(R.font.ovoregular)),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    // Back to Main Button
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(115.dp)
+                            .clickable { onBackToMain() }
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.button_2_click),
+                            contentDescription = "Back to Main",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text(
+                            text = stringResource(R.string.button_back_to_main),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(5.dp))
+
+                    // Play Again Button
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(115.dp)
+                            .clickable { onPlayAgain() }
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.button_1_clicked),
+                            contentDescription = "Play Again",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text(
+                            text = stringResource(R.string.button_play_again),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ImageButtonWithLabelSP(
+    defaultImageRes: Int,
+    clickedImageRes: Int,
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var isClicked by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = modifier
+            .height(80.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable {
+                isClicked = true
+                onClick()
+                CoroutineScope(Dispatchers.Main).launch {
+                    delay(100) // Reset image after 100ms
+                    isClicked = false
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(id = if (isClicked) clickedImageRes else defaultImageRes),
+            contentDescription = text,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxSize()
+        )
+        Text(
+            text = text,
+            fontSize = 19.sp,
+            fontFamily = FontFamily(Font(R.font.sigmarregular)),
+            fontWeight = FontWeight.Light,
+            color = Color.White,
+            modifier = Modifier.align(Alignment.Center)
+        )
+    }
+}
 
 @Preview(showBackground = true)
 @Composable
 fun SinglePlayerGameScreenPreview() {
     SinglePlayerGameScreen(navController = NavController(LocalContext.current))
+
 }
