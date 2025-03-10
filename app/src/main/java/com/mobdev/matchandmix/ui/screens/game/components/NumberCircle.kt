@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.mobdev.matchandmix.R
 import kotlinx.coroutines.delay
 
-// Predefined distinct light colors for number pairs (excluding red and dark colors)
+// Predefined distinct light colors for number pairs
 private val numberColors = listOf(
     Color(0xFFFFF9C4), // Light Yellow
     Color(0xFFD1C4E9), // Light Purple
@@ -62,8 +62,8 @@ fun NumberCircle(
     var showColors by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        delay(90000) // Wait for 90 seconds before revealing colors
-        showColors = true
+        delay(90000)
+        showColors = false
     }
 
     LaunchedEffect(isRevealed) {
