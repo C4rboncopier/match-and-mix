@@ -23,10 +23,14 @@ import androidx.navigation.NavController
 import com.mobdev.matchandmix.R
 import com.mobdev.matchandmix.navigation.Screen
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.window.Dialog
 import com.mobdev.matchandmix.ui.screens.game.components.GameBoard
 import com.mobdev.matchandmix.ui.screens.welcome.ImageButtonWithLabel
 import kotlinx.coroutines.CoroutineScope
@@ -104,62 +108,30 @@ fun MultiplayerScreen(navController: NavController) {
 
     // Join Game Dialog
     if (showJoinDialog) {
-        AlertDialog(
-            onDismissRequest = { showJoinDialog = false },
-            title = { Text("Join Game") },
-            text = {
-                TextField(
-                    value = gameCodeInput,
-                    onValueChange = { gameCodeInput = it.uppercase() },
-                    label = { Text("Enter Game Code") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (gameCodeInput.isNotEmpty()) {
-                            viewModel.joinGameWithCode(gameCodeInput)
-                            showJoinDialog = false
-                        }
-                    }
-                ) {
-                    Text("Join")
+        JoinGameDialog(
+            gameCodeInput = gameCodeInput,
+            onGameCodeChange = { gameCodeInput = it },
+            onJoinGame = {
+                if (gameCodeInput.isNotEmpty()) {
+                    viewModel.joinGameWithCode(gameCodeInput)
+                    showJoinDialog = false
                 }
             },
-            dismissButton = {
-                Button(onClick = { showJoinDialog = false }) {
-                    Text("Cancel")
-                }
-            }
+            onCancel = { showJoinDialog = false }
         )
     }
 
     // Exit confirmation dialog
     if (showExitConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showExitConfirmation = false },
-            title = { Text("Exit Multiplayer") },
-            text = { Text("Are you sure you want to exit?") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showExitConfirmation = false
-                        viewModel.exitGame()
-                        navController.navigate(Screen.Welcome.route) {
-                            popUpTo(Screen.Welcome.route) { inclusive = true }
-                        }
-                    }
-                ) {
-                    Text("Yes, Exit")
+        ExitConfirmationMP(
+            onExit = {
+                showExitConfirmation = false
+                viewModel.exitGame()
+                navController.navigate(Screen.Welcome.route) {
+                    popUpTo(Screen.Welcome.route) { inclusive = true }
                 }
             },
-            dismissButton = {
-                Button(onClick = { showExitConfirmation = false }) {
-                    Text("Cancel")
-                }
-            }
+            onCancel = { showExitConfirmation = false }
         )
     }
 
@@ -232,38 +204,91 @@ fun MultiplayerScreen(navController: NavController) {
             // Main content
             when {
                 !viewModel.isUserLoggedIn() -> {
-                    // Show login prompt
-                    Card(
+                    // Main container with centered title
+                    Column(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .fillMaxSize()
                             .padding(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Please log in to play multiplayer",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                textAlign = TextAlign.Center
+                        // Login prompt card
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                                .height(180.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = {
-                                    navController.navigate(Screen.Login.route) {
-                                        popUpTo(Screen.Welcome.route)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Please login to your account to access multiplayer",
+                                    fontSize = 18.sp,
+                                    fontFamily = FontFamily(Font(R.font.ovoregular)),
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Spacer(modifier = Modifier.padding(8.dp))
+
+                                // Button with image and icon
+                                Button(
+                                    onClick = {
+                                        navController.navigate(Screen.Login.route) {
+                                            popUpTo(Screen.Welcome.route)
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                                    modifier = Modifier
+                                        .height(80.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.Transparent)
+                                ) {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        // Image background
+                                        Image(
+                                            painter = painterResource(id = R.drawable.button_1_idle),
+                                            contentDescription = "Button Background",
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .scale(1f)
+
+                                        )
+
+                                        // Row inside button (Icon + Text)
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 16.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.AccountCircle,
+                                                contentDescription = "Login Icon",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(23.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "Login",
+                                                color = Color.White,
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
                                 }
-                            ) {
-                                Text("Login")
                             }
                         }
                     }
                 }
+
                 viewModel.gameState is MultiplayerGameState.Initial -> {
                     // Show multiplayer options
                     Card(
@@ -658,6 +683,173 @@ fun MultiplayerScreen(navController: NavController) {
     }
 }
 @Composable
+fun JoinGameDialog(
+    gameCodeInput: String,
+    onGameCodeChange: (String) -> Unit,
+    onJoinGame: () -> Unit,
+    onCancel: () -> Unit
+) {
+    Dialog(onDismissRequest = { onCancel() }) {
+        Box(
+            modifier = Modifier
+                .background(Color.White, shape = RoundedCornerShape(16.dp))
+                .padding(20.dp)
+                .height(175.dp)
+                .fillMaxWidth()
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Title
+                Text(
+                    text = "Join Lobby",
+                    fontSize = 24.sp,
+                    fontFamily = FontFamily(Font(R.font.ovoregular)),
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.Blue,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Input Field for Game Code
+                TextField(
+                    value = gameCodeInput,
+                    onValueChange = { onGameCodeChange(it.uppercase()) },
+                    label = { Text("Enter Game Code") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Buttons
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    // Cancel Button
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clickable { onCancel() }
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.button_2_click),
+                            contentDescription = "Cancel",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text(
+                            text = "Cancel",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    // Join Game Button
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clickable { onJoinGame() }
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.button_1_clicked),
+                            contentDescription = "Join",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text(
+                            text = "Join",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+@Composable
+fun ExitConfirmationMP(
+    onExit: () -> Unit,
+    onCancel: () -> Unit
+) {
+    Dialog(onDismissRequest = { onCancel() }) {
+        Box(
+            modifier = Modifier
+                .background(Color(0xFFFFF9C4), shape = RoundedCornerShape(16.dp))
+                .padding(20.dp)
+                .height(150.dp)
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Title
+                Text(
+                    text = "Exit Multiplayer",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Red,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Confirmation Text
+                Text(
+                    text = "Are you sure you want to exit?",
+                    fontFamily = FontFamily(Font(R.font.ovoregular)),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Buttons
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    // Exit Button
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clickable { onExit() }
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.button_2_click),
+                            contentDescription = "Exit",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text(
+                            text = "Yes, Exit",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    // Cancel Button
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clickable { onCancel() }
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.button_1_clicked),
+                            contentDescription = "Cancel",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text(
+                            text = "Cancel",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun ImageButtonWithLabelSolo(
     defaultImageRes: Int,
     clickedImageRes: Int,
@@ -699,6 +891,7 @@ fun ImageButtonWithLabelSolo(
         )
     }
 }
+
 
 @Composable
 fun ImageButtonWithLabelRow(

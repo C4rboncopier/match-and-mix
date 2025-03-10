@@ -22,6 +22,7 @@
     import androidx.compose.ui.text.style.TextAlign
     import androidx.compose.ui.unit.dp
     import androidx.compose.ui.unit.sp
+    import androidx.compose.ui.window.Dialog
     import androidx.navigation.NavController
     import androidx.lifecycle.viewmodel.compose.viewModel
     import com.mobdev.matchandmix.R
@@ -38,6 +39,7 @@
         authViewModel: AuthViewModel = viewModel()
     ) {
         val scope = rememberCoroutineScope()
+        var logoutDialog by remember { mutableStateOf(false)}
         var username by remember { mutableStateOf<String?>(null) }
 
         LaunchedEffect(Unit) {
@@ -162,37 +164,17 @@
                                     showLogoutDialog = true
                                 }
                             },
-
                             modifier = Modifier.weight(1f)
                         )
 
                         if (showLogoutDialog) {
-                            AlertDialog(
-                                onDismissRequest = { showLogoutDialog = false },
-                                title = { Text("Logout Confirmation",
-                                    fontSize = 22.sp,
-                                    fontWeight = FontWeight.Bold) },
-                                text = { Text("Are you sure you want to logout? ") },
-                                confirmButton = {
-                                    Button(
-                                        onClick = {
-                                            showLogoutDialog = false
-                                            authViewModel.signOut()
-                                            navController.navigate(Screen.Welcome.route) {
-                                                popUpTo(Screen.Welcome.route) { inclusive = true }
-                                            }
-                                        },
-                                    ) {
-                                        Text("Yes, logout", color = Color.White,
-                                            fontWeight = FontWeight.Bold)
-                                    }
-                                },
-                                dismissButton = {
-                                    Button(
-                                        onClick = { showLogoutDialog = false },
-
-                                    ) {
-                                        Text("Cancel", color = Color.White)
+                            LogoutDialog(
+                                onDismiss = { showLogoutDialog = false },
+                                onConfirm = {
+                                    showLogoutDialog = false
+                                    authViewModel.signOut()
+                                    navController.navigate(Screen.Welcome.route) {
+                                        popUpTo(Screen.Welcome.route) { inclusive = true }
                                     }
                                 }
                             )
@@ -204,6 +186,89 @@
                             onClick = { navController.navigate(Screen.Settings.route) },
                             modifier = Modifier.weight(1f)
                         )
+                    }
+                }
+            }
+        }
+    }
+    @Composable
+    fun LogoutDialog(
+        onDismiss: () -> Unit,
+        onConfirm: () -> Unit
+    ) {
+        Dialog(onDismissRequest = onDismiss) {
+            Box(
+                modifier = Modifier
+                    .background(Color(0xFFFFF9C4), shape = RoundedCornerShape(16.dp))
+                    .padding(16.dp)
+                    .height(160.dp)
+                    .width(250.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // Dialog Title
+                    Text(
+                        text = "Logout Confirmation",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Message
+                    Text(
+                        text = "Are you sure you want to logout?",
+                        fontSize = 16.sp,
+                        color = Color.Black,
+                        fontFamily = FontFamily(Font(R.font.ovoregular)),
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+
+                    // Buttons (Images with Text Overlay)
+                    Row {
+                        // Logout Button
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(110.dp)
+                                .clickable { onConfirm() }
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.button_2_click),
+                                contentDescription = "Logout",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            Text(
+                                text = "Logout",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        // Cancel Button
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(110.dp)
+                                .clickable { onDismiss() }
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.button_1_clicked),
+                                contentDescription = "Cancel",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            Text(
+                                text = "Cancel",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }
