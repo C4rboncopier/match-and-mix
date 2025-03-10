@@ -137,20 +137,11 @@ fun MultiplayerScreen(navController: NavController) {
 
     // Opponent left dialog
     if (viewModel.opponentLeft) {
-        AlertDialog(
-            onDismissRequest = {},
-            title = { Text("Game Ended") },
-            text = { Text("Your opponent has left the game.") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.exitGame()
-                        navController.navigate(Screen.Welcome.route) {
-                            popUpTo(Screen.Welcome.route) { inclusive = true }
-                        }
-                    }
-                ) {
-                    Text("Return to Menu")
+        OpponentLeftDialog(
+            onReturnToMenu = {
+                viewModel.exitGame()
+                navController.navigate(Screen.Welcome.route) {
+                    popUpTo(Screen.Welcome.route) { inclusive = true }
                 }
             }
         )
@@ -447,15 +438,16 @@ fun MultiplayerScreen(navController: NavController) {
                                             color = Color(0xff2962ff)
                                         )
                                         Text(
-                                            text = if (viewModel.isPreviewPhase) 
-                                                viewModel.previewTimeLeft.toString() 
-                                            else 
+                                            text = if (viewModel.isPreviewPhase)
+                                                viewModel.previewTimeLeft.toString()
+                                            else
                                                 viewModel.turnTimeLeft.toString(),
                                             style = MaterialTheme.typography.headlineMedium,
-                                            color = if ((viewModel.isPreviewPhase && viewModel.previewTimeLeft <= 10) || 
-                                                (!viewModel.isPreviewPhase && viewModel.turnTimeLeft <= 5)) 
-                                                Color.Red 
-                                            else 
+                                            color = if ((viewModel.isPreviewPhase && viewModel.previewTimeLeft <= 10) ||
+                                                (!viewModel.isPreviewPhase && viewModel.turnTimeLeft <= 5)
+                                            )
+                                                Color.Red
+                                            else
                                                 Color(0xff2962ff)
                                         )
                                     }
@@ -480,14 +472,26 @@ fun MultiplayerScreen(navController: NavController) {
 
                             // Game status and controls
                             if (!viewModel.amIReady) {
-                                Button(
-                                    onClick = { viewModel.setReady() },
-                                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xff2e7d32)
-                                    )
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.CenterHorizontally)
+                                        .clickable { viewModel.setReady() }
                                 ) {
-                                    Text("Ready to Play!")
+                                    Image(
+                                        painter = painterResource(id = R.drawable.button_1_clicked),
+                                        contentDescription = "Ready to Play!",
+                                        modifier = Modifier.size(200.dp, 60.dp),
+                                        contentScale = ContentScale.FillBounds
+                                    )
+                                    Text(
+                                        text = "Ready to Play!",
+                                        modifier = Modifier
+                                            .align(Alignment.Center)
+                                            .padding(8.dp),
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
                                 }
                             } else if (!viewModel.isPreviewPhase && !viewModel.isOpponentReady) {
                                 Text(
@@ -589,43 +593,53 @@ fun MultiplayerScreen(navController: NavController) {
                     // Start Game button during preview phase
                     if (viewModel.isPreviewPhase) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (!viewModel.wantToStartGame) Color(0xff2e7d32) else Color.Gray
-                            )
-                        ) {
+
+                        if (!viewModel.wantToStartGame) {
+                            // Show only the start game button
                             Box(
                                 modifier = Modifier
+                                    .clickable { viewModel.setWantToStartGame() }
                                     .fillMaxWidth()
-                                    .padding(12.dp),
+                                    .height(48.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                if (!viewModel.wantToStartGame) {
-                                    Button(
-                                        onClick = { viewModel.setWantToStartGame() },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xff2e7d32)
-                                        ),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(48.dp)
-                                    ) {
-                                        Text(
-                                            text = "Start Game",
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = Color.White
-                                        )
-                                    }
-                                } else {
+                                Image(
+                                    painter = painterResource(id = R.drawable.button_1_clicked), // Replace with your actual image
+                                    contentDescription = "Start Game",
+                                    modifier = Modifier.size(200.dp,80.dp),
+                                    contentScale = ContentScale.FillBounds
+                                )
+                                Text(
+                                    text = "Start Game",
+                                    modifier = Modifier.align(Alignment.Center),
+                                    fontFamily = FontFamily(Font(R.font.ovoregular)),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color.White
+                                )
+                            }
+                        } else {
+                            // Reveal card when waiting for opponent
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.Gray)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Text(
                                         text = if (viewModel.opponentWantsToStartGame)
                                             "Starting game..."
                                         else
                                             "Waiting for opponent to start...",
                                         style = MaterialTheme.typography.bodyLarge,
+                                        fontFamily = FontFamily(Font(R.font.ovoregular)),
+                                        fontWeight = FontWeight.Bold,
                                         color = Color.White,
                                         textAlign = TextAlign.Center
                                     )
@@ -655,25 +669,43 @@ fun MultiplayerScreen(navController: NavController) {
                             Text(
                                 text = if (isWinner) "You Won!" else "Game Over",
                                 style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
                                 color = if (isWinner) Color(0xff2e7d32) else Color(0xff2962ff)
                             )
                             Text(
-                                text = if (viewModel.opponentLeft) 
-                                    "Your opponent has left the game" 
-                                else 
+                                text = if (viewModel.opponentLeft)
+                                    "Your opponent has left the game"
+                                else
                                     if (isWinner) "Congratulations!" else "Better luck next time!",
                                 style = MaterialTheme.typography.bodyLarge,
+                                fontFamily = FontFamily(Font(R.font.ovoregular)),
                                 textAlign = TextAlign.Center
                             )
-                            Button(
-                                onClick = {
-                                    viewModel.exitGame()
-                                    navController.navigate(Screen.Welcome.route) {
-                                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                            Box(
+                                modifier = Modifier
+                                    .clickable {
+                                        viewModel.exitGame()
+                                        navController.navigate(Screen.Welcome.route) {
+                                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                                        }
                                     }
-                                }
                             ) {
-                                Text("Return to Menu")
+                                Image(
+                                    painter = painterResource(id = R.drawable.button_1_clicked),
+                                    contentDescription = "Return to Menu",
+                                    modifier = Modifier
+                                        .size(200.dp, 60.dp),
+                                    contentScale = ContentScale.FillBounds
+                                )
+                                Text(
+                                    text = "Return to Menu",
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .padding(8.dp),
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
                             }
                         }
                     }
@@ -843,6 +875,64 @@ fun ExitConfirmationMP(
                             color = Color.White
                         )
                     }
+                }
+            }
+        }
+    }
+}
+@Composable
+fun OpponentLeftDialog(
+    onReturnToMenu: () -> Unit
+) {
+    Dialog(onDismissRequest = {}) {
+        Box(
+            modifier = Modifier
+                .background(Color.White, shape = RoundedCornerShape(16.dp))
+                .padding(20.dp)
+                .height(160.dp)
+                .fillMaxWidth()
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Title
+                Text(
+                    text = "Game Ended",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Red,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Message
+                Text(
+                    text = "Your opponent has left the game.",
+                    fontSize = 18.sp,
+                    fontFamily = FontFamily(Font(R.font.ovoregular)),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Return to Menu Button
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(140.dp)
+                        .clickable { onReturnToMenu() }
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.button_2_click), // Replace with your actual image
+                        contentDescription = "Return to Menu",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    Text(
+                        text = "Return to Menu",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
