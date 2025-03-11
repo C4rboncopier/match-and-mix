@@ -515,7 +515,7 @@ class MultiplayerViewModel : ViewModel() {
             gameCode?.let { code ->
                 val isHost = (gameState as? MultiplayerGameState.InGame)?.isHost == true
                 val scoreField = if (isHost) "hostScore" else "guestScore"
-                val newScore = if (isHost) myScore + 1 else opponentScore + 1
+                val newScore = myScore + 1  // Always increment the current player's score
                 val currentTimestamp = System.currentTimeMillis()
 
                 firestore.runTransaction { transaction ->
