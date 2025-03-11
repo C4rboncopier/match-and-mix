@@ -14,13 +14,14 @@ import com.mobdev.matchandmix.ui.screens.welcome.WelcomeScreen
 import com.mobdev.matchandmix.ui.screens.instructions.InstructionsScreen
 import com.mobdev.matchandmix.ui.screens.leaderboard.LeaderboardsScreen
 import com.mobdev.matchandmix.ui.screens.game.MultiplayerScreen
+import com.mobdev.matchandmix.ui.screens.credits.CreditsScreen
 
 sealed class Screen(val route: String) {
     object Welcome : Screen("welcome")
     object SinglePlayer : Screen("single_player")
     object Multiplayer : Screen("multiplayer")
     object Leaderboards : Screen("leaderboards")
-    object Settings : Screen("settings")
+    object Credits : Screen("credits")
     object Login : Screen("login")
     object Register : Screen("register")
     object Instructions : Screen("instructions")
@@ -86,8 +87,8 @@ fun AppNavigation(navController: NavHostController) {
             LeaderboardsScreen(navController = navController)
         }
 
-        composable(Screen.Settings.route) {
-            // TODO: Add settings screen
+        composable(Screen.Credits.route) {
+            CreditsScreen(navController = navController)
         }
 
         composable(Screen.Instructions.route) {

@@ -1,4 +1,4 @@
-package com.mobdev.matchandmix.model
+package com.mobdev.matchandmix.data.models
 
 data class LeaderboardEntry(
     val userId: String = "",

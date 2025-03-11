@@ -183,7 +183,7 @@
                         IconButtonLogo(
                             clickedIconRes = R.drawable.settings_clicked,
                             defaultIconRes = R.drawable.settings_idle,
-                            onClick = { navController.navigate(Screen.Settings.route) },
+                            onClick = { navController.navigate(Screen.Credits.route) },
                             modifier = Modifier.weight(1f)
                         )
                     }

@@ -1,9 +1,9 @@
-package com.mobdev.matchandmix.viewmodel
+package com.mobdev.matchandmix.ui.screens.leaderboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
-import com.mobdev.matchandmix.model.LeaderboardEntry
+import com.mobdev.matchandmix.data.models.LeaderboardEntry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
