@@ -59,12 +59,6 @@ fun NumberCircle(
 
     val rotation = remember { Animatable(if (isRevealed) 180f else 0f) }
     var wasRevealed by remember { mutableStateOf(isRevealed) }
-    var showColors by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        delay(90000)
-        showColors = false
-    }
 
     LaunchedEffect(isRevealed) {
         if (isRevealed && !wasRevealed) {
@@ -95,7 +89,7 @@ fun NumberCircle(
                 color = when {
                     isMatched -> assignedColor
                     isIncorrect -> Color(context.getColor(R.color.material_red))
-                    isRevealed && showColors -> assignedColor
+                    isRevealed -> assignedColor
                     else -> Color(context.getColor(R.color.border_gray))
                 },
                 shape = CircleShape

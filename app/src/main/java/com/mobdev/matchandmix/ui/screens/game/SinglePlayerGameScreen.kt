@@ -593,6 +593,7 @@ fun SinglePlayerGameScreen(navController: NavController) {
                             chances = 5
                             timeLeft = 90
                             selectedNumbers = emptyList()
+                            correctPairs = 0
                             correctPairsCounter = 0
                             totalMatchedPairs = 0
                             emptyPosition = 8
@@ -620,6 +621,7 @@ fun SinglePlayerGameScreen(navController: NavController) {
                         chances = 5
                         timeLeft = 90
                         selectedNumbers = emptyList()
+                        correctPairs = 0
                         correctPairsCounter = 0
                         totalMatchedPairs = 0
                         emptyPosition = 8

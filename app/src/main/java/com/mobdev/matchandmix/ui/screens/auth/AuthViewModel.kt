@@ -5,10 +5,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mobdev.matchandmix.data.auth.AuthRepository
 import com.mobdev.matchandmix.data.auth.AuthResult
 import com.mobdev.matchandmix.data.auth.FirebaseAuthRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -24,6 +28,28 @@ class AuthViewModel(
         private set
 
     private var pendingGoogleIdToken: String? = null
+
+    private val auth = FirebaseAuth.getInstance()
+    private val db = FirebaseFirestore.getInstance()
+    
+    private val _currentUsername = MutableStateFlow<String>("")
+    val currentUsername: StateFlow<String> = _currentUsername
+
+    init {
+        checkAndUpdateCurrentUser()
+    }
+
+    fun checkAndUpdateCurrentUser() {
+        viewModelScope.launch {
+            val currentUser = getCurrentUser()
+            if (currentUser != null) {
+                val username = getUsernameFromFirestore(currentUser.uid)
+                _currentUsername.value = username ?: ""
+            } else {
+                _currentUsername.value = ""
+            }
+        }
+    }
 
     fun login(username: String, password: String) {
         viewModelScope.launch {
@@ -65,18 +91,18 @@ class AuthViewModel(
         repository.signOut()
     }
 
-    fun getCurrentUser() = repository.getCurrentUser()
+    fun getCurrentUser(): FirebaseUser? = auth.currentUser
 
-    fun signOut() = repository.signOut()
+    fun signOut() {
+        auth.signOut()
+        _currentUsername.value = ""
+        repository.signOut()
+    }
 
     suspend fun getUsernameFromFirestore(uid: String): String? {
         return try {
-            val userDoc = firestore.collection("users")
-                .document(uid)
-                .get()
-                .await()
-            
-            userDoc.getString("username")
+            val document = db.collection("users").document(uid).get().await()
+            document.getString("username")
         } catch (e: Exception) {
             null
         }

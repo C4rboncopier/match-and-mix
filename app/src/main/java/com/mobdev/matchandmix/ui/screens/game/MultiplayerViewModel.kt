@@ -33,7 +33,6 @@ class MultiplayerViewModel : ViewModel() {
     private var gameBoardListener: ListenerRegistration? = null
 
     var gameState by mutableStateOf<MultiplayerGameState>(MultiplayerGameState.Initial)
-        private set
 
     var gameCode by mutableStateOf<String?>(null)
         private set
@@ -52,6 +51,12 @@ class MultiplayerViewModel : ViewModel() {
         private set
     
     var emptyPosition by mutableStateOf(8)
+        private set
+
+    var hostUsername by mutableStateOf<String?>(null)
+        private set
+
+    var guestUsername by mutableStateOf<String?>(null)
         private set
 
     var selectedNumbers by mutableStateOf<List<SelectedNumber>>(emptyList())
@@ -315,6 +320,15 @@ class MultiplayerViewModel : ViewModel() {
                 turnTimerJob = null
                 val newMovableTilePositions = getAdjacentPositions(emptyPosition).toSet()
                 
+                // Hide any revealed but unmatched numbers
+                val updatedTiles = tiles.map { tile ->
+                    val newRevealed = tile.isRevealed.mapIndexed { index, revealed ->
+                        // Keep only matched numbers revealed
+                        tile.isMatched[index]
+                    }
+                    tile.copy(isRevealed = newRevealed)
+                }
+                
                 // Update Firebase first in a single atomic transaction
                 gameCode?.let { code ->
                     val currentTimestamp = System.currentTimeMillis()
@@ -322,6 +336,15 @@ class MultiplayerViewModel : ViewModel() {
                     firestore.runTransaction { transaction ->
                         val docRef = firestore.collection("game_sessions").document(code)
                         transaction.update(docRef, mapOf(
+                            "board" to updatedTiles.map { tile ->
+                                mapOf(
+                                    "id" to tile.id.toString(),
+                                    "position" to tile.position,
+                                    "numbers" to tile.numbers,
+                                    "isRevealed" to tile.isRevealed,
+                                    "isMatched" to tile.isMatched
+                                )
+                            },
                             "turnStartTimestamp" to currentTimestamp,
                             "isSelectingMove" to true,
                             "incorrectPair" to emptyList<Map<String, Any>>()
@@ -330,6 +353,7 @@ class MultiplayerViewModel : ViewModel() {
                     
                     // After Firebase update is confirmed, update all local state at once
                     withContext(Dispatchers.Main) {
+                        tiles = updatedTiles
                         isSelectingMove = true
                         selectedNumbers = emptyList()
                         revealedNumbersCount = 0
@@ -341,6 +365,13 @@ class MultiplayerViewModel : ViewModel() {
             } catch (e: Exception) {
                 // If Firebase update fails, still ensure the game is playable
                 withContext(Dispatchers.Main) {
+                    // Hide any revealed but unmatched numbers in local state
+                    tiles = tiles.map { tile ->
+                        val newRevealed = tile.isRevealed.mapIndexed { index, _ ->
+                            tile.isMatched[index] // Keep only matched numbers revealed
+                        }
+                        tile.copy(isRevealed = newRevealed)
+                    }
                     isSelectingMove = true
                     selectedNumbers = emptyList()
                     revealedNumbersCount = 0
@@ -762,6 +793,10 @@ class MultiplayerViewModel : ViewModel() {
                         val wasSelectingMove = isSelectingMove
                         isMyTurn = currentTurn == currentUserId
                         
+                        // Get usernames from Firebase
+                        hostUsername = snapshot.getString("hostUsername")
+                        guestUsername = snapshot.getString("guestUsername")
+                        
                         // Get selection state from Firebase
                         val serverIsSelectingMove = snapshot.getBoolean("isSelectingMove") ?: false
                         
@@ -1049,12 +1084,48 @@ class MultiplayerViewModel : ViewModel() {
         }
     }
 
+    // Add this function to check if user already has an active game session
+    private suspend fun hasActiveGameSession(userId: String): Boolean {
+        try {
+            // Check if user is hosting any active game
+            val hostingGames = firestore.collection("game_sessions")
+                .whereEqualTo("hostId", userId)
+                .whereIn("status", listOf("waiting", "in_progress"))
+                .limit(1)
+                .get()
+                .await()
+            
+            if (!hostingGames.isEmpty) {
+                return true
+            }
+            
+            // Check if user is a guest in any active game
+            val guestGames = firestore.collection("game_sessions")
+                .whereEqualTo("guestId", userId)
+                .whereEqualTo("status", "in_progress")
+                .limit(1)
+                .get()
+                .await()
+                
+            return !guestGames.isEmpty
+        } catch (e: Exception) {
+            // If there's an error, we'll assume no active session to avoid blocking the user
+            return false
+        }
+    }
+
     fun createPrivateGame() {
         viewModelScope.launch {
             try {
                 val currentUser = auth.getCurrentUser()
                 if (currentUser == null) {
                     errorMessage = "You must be logged in to create a game"
+                    return@launch
+                }
+                
+                // Check if user already has an active game session
+                if (hasActiveGameSession(currentUser.uid)) {
+                    errorMessage = "You already have an active game session. Please finish or exit that game first."
                     return@launch
                 }
 
@@ -1123,6 +1194,12 @@ class MultiplayerViewModel : ViewModel() {
                     errorMessage = "You must be logged in to join a game"
                     return@launch
                 }
+                
+                // Check if user already has an active game session
+                if (hasActiveGameSession(currentUser.uid)) {
+                    errorMessage = "You already have an active game session. Please finish or exit that game first."
+                    return@launch
+                }
 
                 val gameSession = firestore.collection("game_sessions")
                     .document(code)
@@ -1136,6 +1213,13 @@ class MultiplayerViewModel : ViewModel() {
 
                 if (gameSession.getString("status") != "waiting") {
                     errorMessage = "Game is no longer available"
+                    return@launch
+                }
+                
+                // Check if the user is trying to join their own game
+                val hostId = gameSession.getString("hostId")
+                if (hostId == currentUser.uid) {
+                    errorMessage = "You cannot join your own game"
                     return@launch
                 }
 
@@ -1169,17 +1253,28 @@ class MultiplayerViewModel : ViewModel() {
                     errorMessage = "You must be logged in to join a game"
                     return@launch
                 }
+                
+                // Check if user already has an active game session
+                if (hasActiveGameSession(currentUser.uid)) {
+                    errorMessage = "You already have an active game session. Please finish or exit that game first."
+                    return@launch
+                }
 
-                // Find an available public game
-                val availableGame = firestore.collection("game_sessions")
+                // Find available public games without the inequality filter that causes FAILED_PRECONDITION
+                val availableGames = firestore.collection("game_sessions")
                     .whereEqualTo("status", "waiting")
                     .whereEqualTo("guestId", null)
                     .whereEqualTo("isPrivate", false)
-                    .limit(1)
+                    .limit(10) // Get a few games to filter client-side
                     .get()
                     .await()
 
-                if (availableGame.isEmpty) {
+                // Filter out games hosted by the current user client-side
+                val filteredGames = availableGames.documents.filter { 
+                    it.getString("hostId") != currentUser.uid 
+                }
+
+                if (filteredGames.isEmpty()) {
                     // No available games, create a new one
                     val newGameCode = UUID.randomUUID().toString().substring(0, 6).uppercase()
                     gameCode = newGameCode
@@ -1231,8 +1326,8 @@ class MultiplayerViewModel : ViewModel() {
                     startListeningForOpponent(newGameCode)
                     startListeningToGameBoard()
                 } else {
-                    // Join the available game
-                    val gameSession = availableGame.documents[0]
+                    // Join the first available game that's not hosted by the current user
+                    val gameSession = filteredGames[0]
                     val gameCode = gameSession.getString("gameCode")!!
                     joinGameWithCode(gameCode)
                     startListeningToGameBoard()

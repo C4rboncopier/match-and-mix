@@ -83,7 +83,7 @@ fun MultiplayerScreen(navController: NavController) {
 
     // Handle back button
     BackHandler(enabled = true) {
-        if (viewModel.gameState !is MultiplayerGameState.Initial) {
+        if (viewModel.gameState !is MultiplayerGameState.Initial && viewModel.gameState !is MultiplayerGameState.GameOver) {
             showExitConfirmation = true
         } else {
             navController.navigate(Screen.Welcome.route) {
@@ -95,11 +95,17 @@ fun MultiplayerScreen(navController: NavController) {
     // Error dialog state
     if (viewModel.errorMessage != null) {
         AlertDialog(
-            onDismissRequest = { viewModel.clearError() },
+            onDismissRequest = { 
+                viewModel.clearError()
+                gameCodeInput = "" // Clear the input when there's an error
+            },
             title = { Text("Error") },
             text = { Text(viewModel.errorMessage!!) },
             confirmButton = {
-                Button(onClick = { viewModel.clearError() }) {
+                Button(onClick = { 
+                    viewModel.clearError()
+                    gameCodeInput = "" // Clear the input when there's an error
+                }) {
                     Text("OK")
                 }
             }
@@ -114,10 +120,14 @@ fun MultiplayerScreen(navController: NavController) {
             onJoinGame = {
                 if (gameCodeInput.isNotEmpty()) {
                     viewModel.joinGameWithCode(gameCodeInput)
+                    gameCodeInput = "" // Clear the input
                     showJoinDialog = false
                 }
             },
-            onCancel = { showJoinDialog = false }
+            onCancel = { 
+                gameCodeInput = "" // Clear the input when canceling
+                showJoinDialog = false 
+            }
         )
     }
 
@@ -127,23 +137,9 @@ fun MultiplayerScreen(navController: NavController) {
             onExit = {
                 showExitConfirmation = false
                 viewModel.exitGame()
-                navController.navigate(Screen.Welcome.route) {
-                    popUpTo(Screen.Welcome.route) { inclusive = true }
-                }
+                viewModel.gameState = MultiplayerGameState.Initial
             },
             onCancel = { showExitConfirmation = false }
-        )
-    }
-
-    // Opponent left dialog
-    if (viewModel.opponentLeft) {
-        OpponentLeftDialog(
-            onReturnToMenu = {
-                viewModel.exitGame()
-                navController.navigate(Screen.Welcome.route) {
-                    popUpTo(Screen.Welcome.route) { inclusive = true }
-                }
-            }
         )
     }
 
@@ -176,7 +172,15 @@ fun MultiplayerScreen(navController: NavController) {
                     IconButtonLogo(
                         clickedIconRes = R.drawable.backarrow,
                         defaultIconRes = R.drawable.backarrow,
-                        onClick = { showExitConfirmation = true },
+                        onClick = { 
+                            if (viewModel.gameState !is MultiplayerGameState.Initial && viewModel.gameState !is MultiplayerGameState.GameOver) {
+                                showExitConfirmation = true
+                            } else {
+                                navController.navigate(Screen.Welcome.route) {
+                                    popUpTo(Screen.Welcome.route) { inclusive = true }
+                                }
+                            }
+                        },
                     )
                 }
 
@@ -422,7 +426,10 @@ fun MultiplayerScreen(navController: NavController) {
                             ) {
                                 // Player 1
                                 StatColumn(
-                                    label = if (isHost) "You (P1)" else "Player 1",
+                                    label = if (isHost) 
+                                        "${viewModel.hostUsername ?: "..."} (You)"
+                                    else 
+                                        viewModel.hostUsername ?: "...",
                                     value = if (isHost) viewModel.myScore else viewModel.opponentScore,
                                     isReady = if (isHost) viewModel.amIReady else viewModel.isOpponentReady
                                 )
@@ -455,7 +462,10 @@ fun MultiplayerScreen(navController: NavController) {
 
                                 // Player 2
                                 StatColumn(
-                                    label = if (!isHost) "You (P2)" else "Player 2",
+                                    label = if (!isHost)
+                                        "${viewModel.guestUsername ?: "..."} (You)"
+                                    else 
+                                        viewModel.guestUsername ?: "...",
                                     value = if (!isHost) viewModel.myScore else viewModel.opponentScore,
                                     isReady = if (!isHost) viewModel.amIReady else viewModel.isOpponentReady
                                 )
@@ -667,10 +677,10 @@ fun MultiplayerScreen(navController: NavController) {
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             Text(
-                                text = if (isWinner) "You Won!" else "Game Over",
+                                text = if (viewModel.opponentLeft) "You Won!" else if (isWinner) "You Won!" else "Game Over",
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isWinner) Color(0xff2e7d32) else Color(0xff2962ff)
+                                color = if (viewModel.opponentLeft || isWinner) Color(0xff2e7d32) else Color(0xff2962ff)
                             )
                             Text(
                                 text = if (viewModel.opponentLeft)
@@ -875,64 +885,6 @@ fun ExitConfirmationMP(
                             color = Color.White
                         )
                     }
-                }
-            }
-        }
-    }
-}
-@Composable
-fun OpponentLeftDialog(
-    onReturnToMenu: () -> Unit
-) {
-    Dialog(onDismissRequest = {}) {
-        Box(
-            modifier = Modifier
-                .background(Color.White, shape = RoundedCornerShape(16.dp))
-                .padding(20.dp)
-                .height(160.dp)
-                .fillMaxWidth()
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // Title
-                Text(
-                    text = "Game Ended",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Red,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Message
-                Text(
-                    text = "Your opponent has left the game.",
-                    fontSize = 18.sp,
-                    fontFamily = FontFamily(Font(R.font.ovoregular)),
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Return to Menu Button
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(140.dp)
-                        .clickable { onReturnToMenu() }
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.button_2_click), // Replace with your actual image
-                        contentDescription = "Return to Menu",
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    Text(
-                        text = "Return to Menu",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        textAlign = TextAlign.Center
-                    )
                 }
             }
         }

@@ -40,16 +40,13 @@
     ) {
         val scope = rememberCoroutineScope()
         var logoutDialog by remember { mutableStateOf(false)}
-        var username by remember { mutableStateOf<String?>(null) }
+        val username by authViewModel.currentUsername.collectAsState()
 
+        // This effect will run once when the screen is created
         LaunchedEffect(Unit) {
-            val currentUser = authViewModel.getCurrentUser()
-            if (currentUser != null) {
-                scope.launch {
-                    username = authViewModel.getUsernameFromFirestore(currentUser.uid)
-                }
-            }
+            authViewModel.checkAndUpdateCurrentUser()
         }
+
         Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -83,14 +80,11 @@
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .size(320.dp)
-
-
-
                     )
                 }
 
                 // Welcome Message - only show if user is logged in
-                if (username != null) {
+                if (!username.isNullOrEmpty()) {
                     Text(
                         text = "Welcome back, \n $username!",
                         fontSize = 30.sp,
@@ -119,7 +113,6 @@
                             text = "Singleplayer",
                             onClick = { navController.navigate(Screen.SinglePlayer.route) },
                             modifier = Modifier.weight(1f)
-
                         )
 
                         ImageButtonWithLabel(
@@ -155,10 +148,10 @@
                         var showLogoutDialog by remember { mutableStateOf(false) }
 
                         IconButtonLogo(
-                            defaultIconRes = if (username == null) R.drawable.login_idle else R.drawable.logout_idle,
-                            clickedIconRes = if (username == null) R.drawable.login_clicked else R.drawable.logout_clicked,
+                            defaultIconRes = if (username.isNullOrEmpty()) R.drawable.login_idle else R.drawable.logout_idle,
+                            clickedIconRes = if (username.isNullOrEmpty()) R.drawable.login_clicked else R.drawable.logout_clicked,
                             onClick = {
-                                if (username == null) {
+                                if (username.isNullOrEmpty()) {
                                     navController.navigate(Screen.Login.route)
                                 } else {
                                     showLogoutDialog = true
