@@ -341,6 +341,7 @@ fun SinglePlayerGameScreen(navController: NavController) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .height(80.dp)
                         .padding(horizontal = 8.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -351,7 +352,7 @@ fun SinglePlayerGameScreen(navController: NavController) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -365,33 +366,39 @@ fun SinglePlayerGameScreen(navController: NavController) {
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.Medium
                             ),
+                            fontFamily = FontFamily(Font(R.font.ovoregular)),
+                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.weight(1f)
                         )
-                        Button(
-                            onClick = {
-                                navController.navigate(Screen.Login.route) {
-                                    popUpTo(Screen.Welcome.route)
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            ),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            modifier = Modifier.wrapContentWidth()
+                        Box(
+                            modifier = Modifier
+                                .size(85.dp)
+                                .padding(end = 16.dp)
+                                .clickable {
+                                    navController.navigate(Screen.Login.route) {
+                                        popUpTo(Screen.Welcome.route)
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
                         ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.button_1_clicked),
+                                contentDescription = "Login",
+                                modifier = Modifier.size(70.dp)
+                            )
                             Text(
-                                "Login",
+                                text = "Login",
                                 style = MaterialTheme.typography.labelLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                )
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                ),
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
                 }
             }
-
-
 
 
                 Spacer(modifier = Modifier.height(16.dp))
