@@ -35,17 +35,17 @@
 
     <!-- Instructions Sections -->
     <string name="instructions_section_objective_title">Game Objective</string>
-    <string name="instructions_section_objective_content">Match &amp; Mix is a unique memory-puzzle game that combines number matching with tile sliding. Your goal is to find matching number pairs while strategically moving tiles to create opportunities for matches.</string>
+    <string name="instructions_section_objective_content">Match &amp; Mix is a memory-puzzle game where you find matching number pairs while sliding tiles. Match all pairs to win!</string>
 
-    <string name="instructions_section_elements_title">Game Elements</string>
-    <string name="instructions_section_elements_content">• Each tile contains 5 numbers arranged in a cross pattern\n• One space is always empty, allowing tiles to be moved\n• Numbers can only be matched when they are revealed\n• You have 3 chances and limited time to make matches</string>
+    <string name="instructions_section_elements_title">Game Basics</string>
+    <string name="instructions_section_elements_content">• Each tile has 5 numbers in a cross pattern\n• One space is empty, allowing tiles to move\n• You have 5 chances to make matches\n• Timer counts down during your turn</string>
 
-    <string name="instructions_section_howto_title">How to Play</string>
-    <string name="instructions_section_howto_content">1. Click on numbers to reveal them\n2. You can reveal up to 2 numbers at a time\n3. If the numbers match, they turn green and stay revealed\n4. If they don\'t match, they will be hidden again\n5. Slide tiles into the empty space to create new matching opportunities\n6. Match all pairs before time runs out to win!</string>
+    <string name="instructions_section_howto_title">Single Player Mode</string>
+    <string name="instructions_section_howto_content">1. Memorize the numbers during preview\n2. Click numbers to reveal them (2 at a time)\n3. If numbers match, they stay revealed\n4. If they don\'t match, they hide and you lose a chance\n5. After a failed match, you must move a tile\n6. Match all pairs before running out of chances</string>
 
-    <string name="instructions_section_scoring_title">Scoring</string>
-    <string name="instructions_section_scoring_content">• Each correct match: +10 points\n• Quick matches (under 5 seconds): +5 bonus points\n• Wrong matches: -2 points\n• Running out of chances: Game Over</string>
+    <string name="instructions_section_multiplayer_title">Multiplayer Mode</string>
+    <string name="instructions_section_multiplayer_content">1. Create a lobby or join with a code\n2. Both players must click \"Ready to Play\"\n3. Memorize numbers during preview\n4. Take turns finding matches\n5. After a failed match, move a tile\n6. First player to score 11 points wins\n7. Each match = 1 point</string>
 
     <string name="instructions_section_tips_title">Tips</string>
-    <string name="instructions_section_tips_content">• Plan your moves carefully\n• Remember the numbers you\'ve seen\n• Use the empty space strategically\n• Try to make matches quickly for bonus points\n• Keep track of your remaining chances</string>
+    <string name="instructions_section_tips_content">• Remember number positions during preview\n• Plan your moves carefully\n• Use the empty space strategically\n• In multiplayer, watch your opponent\'s moves\n• Try to make matches quickly before time runs out</string>
 </resources>

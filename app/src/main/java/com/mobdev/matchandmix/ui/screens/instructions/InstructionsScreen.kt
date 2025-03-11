@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -88,7 +89,7 @@ fun InstructionsScreen(navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 InstructionSection(
-                    title = stringResource(R.string.instructions_section_objective_title) ,
+                    title = stringResource(R.string.instructions_section_objective_title),
                     content = stringResource(R.string.instructions_section_objective_content)
                 )
 
@@ -103,14 +104,17 @@ fun InstructionsScreen(navController: NavController) {
                 )
 
                 InstructionSection(
-                    title = stringResource(R.string.instructions_section_scoring_title),
-                    content = stringResource(R.string.instructions_section_scoring_content)
+                    title = stringResource(R.string.instructions_section_multiplayer_title),
+                    content = stringResource(R.string.instructions_section_multiplayer_content)
                 )
 
                 InstructionSection(
                     title = stringResource(R.string.instructions_section_tips_title),
                     content = stringResource(R.string.instructions_section_tips_content)
                 )
+                
+                // Add some space at the bottom for better scrolling
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
@@ -128,7 +132,7 @@ private fun InstructionSection(
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
         )
     ) {
         Column(

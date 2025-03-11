@@ -345,7 +345,7 @@ fun LoginScreen(
                     OutlinedButton(
                         onClick = { handleGoogleSignIn() },
                         modifier = Modifier
-                            .weight(1f)
+                            .fillMaxWidth()
                             .height(48.dp),
                         enabled = !isLoading,
                         shape = RoundedCornerShape(12.dp),
@@ -380,39 +380,6 @@ fun LoginScreen(
                                     style = MaterialTheme.typography.labelLarge
                                 )
                             }
-                        }
-                    }
-
-                    OutlinedButton(
-                        onClick = { /* Facebook sign in */ },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(
-                            width = 1.dp
-                        )
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.icons8_facebook),
-                                contentDescription = "Facebook Icon",
-                                modifier = Modifier.size(28.dp),
-                                tint = Color.Unspecified
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                "Facebook",
-                                style = MaterialTheme.typography.labelLarge
-                            )
                         }
                     }
                 }
