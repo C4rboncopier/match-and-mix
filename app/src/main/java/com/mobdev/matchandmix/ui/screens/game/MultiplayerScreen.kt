@@ -435,7 +435,8 @@ fun MultiplayerScreen(navController: NavController) {
                                 )
 
                                 // Timer (only show during preview or turn)
-                                if (viewModel.isPreviewPhase || viewModel.gameStarted) {
+                                if ((viewModel.isPreviewPhase && viewModel.previewTimeLeft > 0) || 
+                                    (viewModel.gameStarted && viewModel.turnTimeLeft >= 0)) {
                                     Column(
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
@@ -448,10 +449,10 @@ fun MultiplayerScreen(navController: NavController) {
                                             text = if (viewModel.isPreviewPhase)
                                                 viewModel.previewTimeLeft.toString()
                                             else
-                                                viewModel.turnTimeLeft.toString(),
+                                                if (viewModel.turnTimeLeft >= 0) viewModel.turnTimeLeft.toString() else "...",
                                             style = MaterialTheme.typography.headlineMedium,
                                             color = if ((viewModel.isPreviewPhase && viewModel.previewTimeLeft <= 10) ||
-                                                (!viewModel.isPreviewPhase && viewModel.turnTimeLeft <= 5)
+                                                (!viewModel.isPreviewPhase && viewModel.turnTimeLeft in 0..5)
                                             )
                                                 Color.Red
                                             else

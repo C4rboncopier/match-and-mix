@@ -189,6 +189,8 @@ class MultiplayerViewModel : ViewModel() {
         previewTimerJob?.cancel()
         previewTimerJob = viewModelScope.launch {
             previewTimeLeft = 90 // Reset timer to 90 seconds
+            
+            // Start countdown using local timer only
             while (previewTimeLeft > 0) {
                 delay(1000)
                 previewTimeLeft--
@@ -203,6 +205,9 @@ class MultiplayerViewModel : ViewModel() {
     private fun startTurnTimer() {
         // Prevent multiple timer starts during transitions
         if (isTimerTransitioning) return
+        
+        // Don't start timer if game hasn't started yet
+        if (!gameStarted) return
         
         // Set transitioning flag
         isTimerTransitioning = true
@@ -232,11 +237,12 @@ class MultiplayerViewModel : ViewModel() {
                 gameCode?.let { code ->
                     val startTimestamp = System.currentTimeMillis()
                     
-                    // Update Firebase with start timestamp only
+                    // Update Firebase with start timestamp and initial timer value
                     firestore.collection("game_sessions")
                         .document(code)
                         .update(mapOf(
                             "turnStartTimestamp" to startTimestamp,
+                            "turnTimeLeft" to 15,
                             "isSelectingMove" to false
                         ))
                         .await()
@@ -245,25 +251,34 @@ class MultiplayerViewModel : ViewModel() {
                         turnStartTimestamp = startTimestamp
                         isTimerTransitioning = false
                         
-                        // Start local timer based on timestamp
-                        turnTimerJob = viewModelScope.launch {
-                            while (isMyTurn && !isSelectingMove && !isPreviewPhase) {
-                                val currentTime = System.currentTimeMillis()
-                                val elapsedSeconds = ((currentTime - startTimestamp) / 1000).toInt()
-                                val newTimeLeft = maxOf(15 - elapsedSeconds, 0)
-                                
-                                withContext(Dispatchers.Main) {
-                                    if (!isTimerTransitioning && turnTimeLeft != newTimeLeft) {
-                                        turnTimeLeft = newTimeLeft
+                        // Start timer job that updates Firestore every second
+                        if (isMyTurn) {
+                            turnTimerJob = viewModelScope.launch {
+                                for (i in 15 downTo 0) {
+                                    // Update Firestore with current time left
+                                    try {
+                                        firestore.collection("game_sessions")
+                                            .document(code)
+                                            .update(mapOf("turnTimeLeft" to i))
+                                            .await()
+                                    } catch (e: Exception) {
+                                        // If update fails, continue with local timer
+                                    }
+                                    
+                                    // Wait for 1 second
+                                    delay(1000)
+                                    
+                                    // Check if conditions have changed
+                                    if (!isMyTurn || isSelectingMove || isPreviewPhase) {
+                                        break
+                                    }
+                                    
+                                    // If we've reached zero, handle timer expiration
+                                    if (i == 0 && isMyTurn && !isSelectingMove && gameStarted && !isPreviewPhase) {
+                                        handleTimerExpired()
+                                        break
                                     }
                                 }
-                                
-                                if (newTimeLeft == 0 && isMyTurn && !isSelectingMove && gameStarted && !isPreviewPhase) {
-                                    handleTimerExpired()
-                                    break
-                                }
-                                
-                                delay(100) // Update frequently for smooth countdown
                             }
                         }
                     }
@@ -275,26 +290,26 @@ class MultiplayerViewModel : ViewModel() {
                 // Fallback to local timer if Firebase fails
                 withContext(Dispatchers.Main) {
                     turnTimeLeft = 15
-                    val startTimestamp = System.currentTimeMillis()
                     
-                    turnTimerJob = viewModelScope.launch {
-                        while (isMyTurn && !isSelectingMove && !isPreviewPhase) {
-                            val currentTime = System.currentTimeMillis()
-                            val elapsedSeconds = ((currentTime - startTimestamp) / 1000).toInt()
-                            val newTimeLeft = maxOf(15 - elapsedSeconds, 0)
-                            
-                            withContext(Dispatchers.Main) {
-                                if (!isTimerTransitioning && turnTimeLeft != newTimeLeft) {
-                                    turnTimeLeft = newTimeLeft
+                    // Only start a local timer if it's my turn
+                    if (isMyTurn) {
+                        turnTimerJob = viewModelScope.launch {
+                            for (i in 15 downTo 0) {
+                                withContext(Dispatchers.Main) {
+                                    turnTimeLeft = i
+                                }
+                                
+                                delay(1000)
+                                
+                                if (!isMyTurn || isSelectingMove || isPreviewPhase) {
+                                    break
+                                }
+                                
+                                if (i == 0 && isMyTurn && !isSelectingMove && gameStarted && !isPreviewPhase) {
+                                    handleTimerExpired()
+                                    break
                                 }
                             }
-                            
-                            if (newTimeLeft == 0 && isMyTurn && !isSelectingMove && gameStarted && !isPreviewPhase) {
-                                handleTimerExpired()
-                                break
-                            }
-                            
-                            delay(100)
                         }
                     }
                 }
@@ -346,6 +361,7 @@ class MultiplayerViewModel : ViewModel() {
                                 )
                             },
                             "turnStartTimestamp" to currentTimestamp,
+                            "turnTimeLeft" to 15,
                             "isSelectingMove" to true,
                             "incorrectPair" to emptyList<Map<String, Any>>()
                         ))
@@ -404,6 +420,7 @@ class MultiplayerViewModel : ViewModel() {
                 tiles = updatedTiles
                 isPreviewPhase = false // Set this before starting the turn timer
                 isSelectingMove = false // Make sure we're not in selection mode
+                turnTimeLeft = 15 // Initialize the timer when game actually starts
                 
                 // Get host ID before updating Firebase
                 val hostId = getHostId()
@@ -425,9 +442,11 @@ class MultiplayerViewModel : ViewModel() {
                             "hostWantsToStart" to false,
                             "guestWantsToStart" to false,
                             "gameStarted" to true,
+                            "status" to "in_progress",
                             "currentTurn" to hostId, // Host always starts first
                             "isSelectingMove" to false, // Make sure selection mode is off
-                            "turnStartTimestamp" to currentTimestamp // Reset timestamp
+                            "turnStartTimestamp" to currentTimestamp, // Reset timestamp
+                            "turnTimeLeft" to 15 // Initialize timer
                         ))
                         .await()
                 }
@@ -442,7 +461,7 @@ class MultiplayerViewModel : ViewModel() {
                     startTurnTimer()
                 } else {
                     isMyTurn = false
-                    turnTimeLeft = 15 // Just set the timer value for display
+                    turnTimeLeft = 15 // Initialize timer value for display even for non-host
                 }
             } catch (e: Exception) {
                 errorMessage = "Failed to start game: ${e.message}"
@@ -543,6 +562,7 @@ class MultiplayerViewModel : ViewModel() {
                                         },
                                         "incorrectPair" to emptyList<Map<String, Any>>(),
                                         "turnStartTimestamp" to currentTimestamp,
+                                        "turnTimeLeft" to 15,
                                         "isSelectingMove" to true
                                     )
                                 )
@@ -612,6 +632,7 @@ class MultiplayerViewModel : ViewModel() {
                         "incorrectPair" to emptyList<Map<String, Any>>(),
                         "lastMatchTimestamp" to com.google.firebase.Timestamp.now(),
                         "turnStartTimestamp" to currentTimestamp,
+                        "turnTimeLeft" to 15,
                         "isSelectingMove" to false
                     ))
                 }.await()
@@ -688,6 +709,7 @@ class MultiplayerViewModel : ViewModel() {
                                 "emptyPosition" to fromPosition,
                                 "currentTurn" to opponentId, // Switch turns
                                 "turnStartTimestamp" to currentTimestamp, // Reset timer for next player
+                                "turnTimeLeft" to 15, // Reset timer value
                                 "isSelectingMove" to false // Reset selection state
                             )
                         )
@@ -755,14 +777,21 @@ class MultiplayerViewModel : ViewModel() {
                                 "host_left" -> {
                                     if (currentUser?.uid == guestId) {
                                         opponentLeft = true
-                                        gameState = MultiplayerGameState.GameOver(false)
+                                        gameState = MultiplayerGameState.GameOver(true) // Guest wins if host leaves
                                     }
                                 }
                                 "guest_left" -> {
                                     if (currentUser?.uid == hostId) {
                                         opponentLeft = true
-                                        gameState = MultiplayerGameState.GameOver(true)
+                                        gameState = MultiplayerGameState.GameOver(true) // Host wins if guest leaves
                                     }
+                                }
+                                "score_limit_reached" -> {
+                                    // Game ended because a player reached the score limit
+                                    val winner = snapshot.getString("winner")
+                                    val isWinner = (currentUser?.uid == hostId && winner == "host") || 
+                                                  (currentUser?.uid == guestId && winner == "guest")
+                                    gameState = MultiplayerGameState.GameOver(isWinner)
                                 }
                             }
                         }
@@ -791,6 +820,42 @@ class MultiplayerViewModel : ViewModel() {
                         val currentTurn = snapshot.getString("currentTurn")
                         val wasMyTurn = isMyTurn
                         val wasSelectingMove = isSelectingMove
+                        val status = snapshot.getString("status")
+
+                        // Stop timers and clear game state if game has ended
+                        if (status == "ended") {
+                            turnTimerJob?.cancel()
+                            turnTimerJob = null
+                            previewTimerJob?.cancel()
+                            previewTimerJob = null
+                            isMyTurn = false
+                            isSelectingMove = false
+                            
+                            // Handle game end state
+                            val endReason = snapshot.getString("endReason")
+                            val winner = snapshot.getString("winner")
+                            when (endReason) {
+                                "host_left" -> {
+                                    if (currentUserId == snapshot.getString("guestId")) {
+                                        opponentLeft = true
+                                        gameState = MultiplayerGameState.GameOver(true)
+                                    }
+                                }
+                                "guest_left" -> {
+                                    if (currentUserId == snapshot.getString("hostId")) {
+                                        opponentLeft = true
+                                        gameState = MultiplayerGameState.GameOver(true)
+                                    }
+                                }
+                                "score_limit_reached" -> {
+                                    val isWinner = (currentUserId == snapshot.getString("hostId") && winner == "host") ||
+                                                 (currentUserId == snapshot.getString("guestId") && winner == "guest")
+                                    gameState = MultiplayerGameState.GameOver(isWinner)
+                                }
+                            }
+                            return@addSnapshotListener
+                        }
+
                         isMyTurn = currentTurn == currentUserId
                         
                         // Get usernames from Firebase
@@ -815,6 +880,15 @@ class MultiplayerViewModel : ViewModel() {
 
                         // Handle turn changes and timer
                         val serverTurnStartTimestamp = snapshot.getLong("turnStartTimestamp")
+                        val serverTurnTimeLeft = snapshot.getLong("turnTimeLeft")?.toInt() ?: 15
+                        
+                        // Update local timer values from server
+                        if (!isTimerTransitioning) {
+                            // Only update turnTimeLeft if it's a valid value (>= 0) or if the game has started
+                            if (serverTurnTimeLeft >= 0 || gameStarted) {
+                                turnTimeLeft = serverTurnTimeLeft
+                            }
+                        }
                         
                         // If turn just changed to me, start a new timer
                         if (!wasMyTurn && isMyTurn) {
@@ -830,29 +904,8 @@ class MultiplayerViewModel : ViewModel() {
                                 turnTimeLeft = 15
                             }
                         }
-                        // If it's not my turn, calculate time based on server timestamp
-                        else if (!isMyTurn && serverTurnStartTimestamp != null) {
-                            // Cancel any existing timer
-                            turnTimerJob?.cancel()
-                            turnTimerJob = null
-                            
-                            // Start a display timer for opponent's turn
-                            if (!isPreviewPhase && gameStarted && !serverIsSelectingMove) {
-                                turnTimerJob = viewModelScope.launch {
-                                    while (!isMyTurn && !isPreviewPhase) {
-                                        val currentTime = System.currentTimeMillis()
-                                        val elapsedSeconds = ((currentTime - serverTurnStartTimestamp) / 1000).toInt()
-                                        val newTimeLeft = maxOf(15 - elapsedSeconds, 0)
-                                        
-                                        withContext(Dispatchers.Main) {
-                                            turnTimeLeft = newTimeLeft
-                                        }
-                                        
-                                        delay(100)
-                                    }
-                                }
-                            }
-                        }
+                        // If it's not my turn, we don't need to start a local timer
+                        // as we'll get updates from Firestore
 
                         // Update ready states
                         val hostReady = snapshot.getBoolean("hostReady") ?: false
@@ -942,6 +995,36 @@ class MultiplayerViewModel : ViewModel() {
                                     } else {
                                         guestScore > hostScore
                                     }
+                                    
+                                    // Update game session status to "ended" in Firestore
+                                    gameCode?.let { code ->
+                                        viewModelScope.launch {
+                                            try {
+                                                val winner = if (hostScore > guestScore) "host" else "guest"
+                                                firestore.runTransaction { transaction ->
+                                                    val docRef = firestore.collection("game_sessions").document(code)
+                                                    transaction.update(docRef, mapOf(
+                                                        "status" to "ended",
+                                                        "endReason" to "score_limit_reached",
+                                                        "winner" to winner,
+                                                        "finalHostScore" to hostScore,
+                                                        "finalGuestScore" to guestScore
+                                                    ))
+                                                }.await()
+                                            } catch (e: Exception) {
+                                                // Log error but continue
+                                                println("Failed to update game end state: ${e.message}")
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Cancel timers immediately
+                                    turnTimerJob?.cancel()
+                                    turnTimerJob = null
+                                    previewTimerJob?.cancel()
+                                    previewTimerJob = null
+                                    
+                                    // Update game state immediately
                                     gameState = MultiplayerGameState.GameOver(isWinner)
                                 }
                             } catch (e: Exception) {
@@ -1064,13 +1147,15 @@ class MultiplayerViewModel : ViewModel() {
                                 when (currentUser.uid) {
                                     hostId -> mapOf(
                                         "status" to "ended",
-                                        "endReason" to "host_left"
+                                        "endReason" to "host_left",
+                                        "winner" to "guest" // Guest wins if host leaves
                                     )
                                     guestId -> mapOf(
                                         "status" to "ended",
                                         "endReason" to "guest_left",
                                         "guestId" to null,
-                                        "guestUsername" to null
+                                        "guestUsername" to null,
+                                        "winner" to "host" // Host wins if guest leaves
                                     )
                                     else -> mapOf() // No changes if not a player
                                 }
@@ -1168,6 +1253,7 @@ class MultiplayerViewModel : ViewModel() {
                     "hostWantsToStart" to false,
                     "guestWantsToStart" to false,
                     "turnStartTimestamp" to System.currentTimeMillis(),
+                    "turnTimeLeft" to -1, // -1 indicates timer not started yet
                     "isSelectingMove" to false
                 )
 
@@ -1314,6 +1400,7 @@ class MultiplayerViewModel : ViewModel() {
                         "hostWantsToStart" to false,
                         "guestWantsToStart" to false,
                         "turnStartTimestamp" to System.currentTimeMillis(),
+                        "turnTimeLeft" to -1, // -1 indicates timer not started yet
                         "isSelectingMove" to false
                     )
 
