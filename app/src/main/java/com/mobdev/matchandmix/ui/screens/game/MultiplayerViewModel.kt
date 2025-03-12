@@ -317,10 +317,6 @@ class MultiplayerViewModel : ViewModel() {
         }
     }
 
-    private fun updateTimerInFirebase(timeLeft: Int) {
-        // No longer needed - we're using timestamp-based timing
-    }
-
     private fun handleTimerExpired() {
         // Use a flag to prevent multiple simultaneous calls
         if (isSelectingMove || !isMyTurn || isTimerTransitioning) return
@@ -1422,24 +1418,6 @@ class MultiplayerViewModel : ViewModel() {
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Failed to join or create game"
                 gameState = MultiplayerGameState.GameOver(false)
-            }
-        }
-    }
-
-    // Add a helper function to update the selection state in Firebase
-    private fun updateSelectionStateInFirebase(isSelecting: Boolean) {
-        viewModelScope.launch {
-            try {
-                gameCode?.let { code ->
-                    firestore.collection("game_sessions")
-                        .document(code)
-                        .update(mapOf(
-                            "isSelectingMove" to isSelecting
-                        ))
-                        .await() // Wait for the update to complete
-                }
-            } catch (e: Exception) {
-                // Silently fail - not critical
             }
         }
     }
