@@ -71,7 +71,6 @@ fun CreditsScreen(navController: NavController) {
                 // Empty box for alignment
                 Box(modifier = Modifier.size(48.dp))
             }
-
             // Scrollable Column for Credits Content
             Column(
                 modifier = Modifier
@@ -81,23 +80,6 @@ fun CreditsScreen(navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally // Center all content
             ) {
-                CreditSection(
-                    title = "Game Developers",
-                    content ="Gimril N. Lozarita\nRhudsel James M. Uy"
-                )
-                CreditSection(
-                    title = "Course Code & Section",
-                    content = "CPE144L - A361"
-                )
-                CreditSection(
-                    title = "Instructor",
-                    content = "Engr. Ariel C. Magbanua"
-                )
-                CreditSection(
-                    title = "Development Tools & Frameworks",
-                    content = "Jetpack Compose - UI Development\nFirestore Firebase - Real-time Database & Multiplayer\nGoogle Sign-In - Authentication & User Management\nAndroid Studio - Development Environment"
-                )
-
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -108,6 +90,7 @@ fun CreditsScreen(navController: NavController) {
                         containerColor = MaterialTheme.colorScheme.surface
                     )
                 ) {
+
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -132,6 +115,22 @@ fun CreditsScreen(navController: NavController) {
                         )
                     }
                 }
+                CreditSection(
+                    title = "Game Developers",
+                    content ="Gimril N. Lozarita\nRhudsel James M. Uy"
+                )
+                CreditSection(
+                    title = "Course Code & Section",
+                    content = "CPE144L - A361"
+                )
+                CreditSection(
+                    title = "Instructor",
+                    content = "Engr. Ariel C. Magbanua"
+                )
+                CreditSection(
+                    title = "Development Tools & Frameworks",
+                    content = "Jetpack Compose - UI Development\nFirestore Firebase - Real-time Database & Multiplayer\nGoogle Sign-In - Authentication & User Management\nAndroid Studio - Development Environment"
+                )
 
                 Card(
                     modifier = Modifier
